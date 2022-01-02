@@ -1,0 +1,83 @@
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+name: Rust CI - Create Release
+
+jobs:
+  check:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Rust latest stable
+        uses: actions-rs/toolchain@v1
+        with:
+            profile: minimal
+            toolchain: stable
+            override: true
+            components: rustfmt, clippy
+
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        env:
+          SKIPPER_CONFIG_FILENAME: .env.example
+        with:
+          command: test
+
+      - name: Run cargo build 
+        uses: actions-rs/cargo@v1
+        env:
+          SKIPPER_CONFIG_FILENAME: .env.example
+        with:
+          command: build
+          args: --release
+
+      - name: Generate SHA-256 hash file
+        run: |
+          cd ./target/release
+          sha256sum skipper > skipper.sha256
+
+      - name: Get Rustc version
+        id: get_rustc
+        run: echo ::set-output name=rustc::$(rustc -V)
+
+      - name: Get Tag version
+        id: get_tag
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_tag.outputs.tag }}
+          release_name: Skipper ${{ steps.get_tag.outputs.tag }}
+          body: "Note: This release was built using `${{ steps.get_rustc.outputs.rustc }}`"
+          draft: true
+          prerelease: false
+
+      - name: Upload skipper binary 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./target/release/skipper
+          asset_name: skipper
+          asset_content_type: application/octet-stream
+
+      - name: Upload skipper sha256
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./target/release/skipper.sha256
+          asset_name: skipper.sha256
+          asset_content_type: text/plain
+          
