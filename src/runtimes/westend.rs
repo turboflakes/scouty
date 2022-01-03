@@ -21,12 +21,15 @@
 
 use crate::config::CONFIG;
 use crate::errors::SkipperError;
-use crate::skipper::{try_call_hook, verify_hook};
+use crate::skipper::{
+    try_call_hook, verify_hook, Skipper, HOOK_ACTIVE_NEXT_ERA, HOOK_INACTIVE_NEXT_ERA,
+    HOOK_NEW_SESSION,
+};
 use crate::validator::{Validator, Validators};
 use codec::Decode;
 use log::{debug, info};
 use std::{result::Result, str::FromStr};
-use subxt::{sp_runtime::AccountId32, Client, DefaultConfig, DefaultExtra, EventSubscription};
+use subxt::{sp_runtime::AccountId32, DefaultConfig, DefaultExtra, EventSubscription};
 
 #[subxt::subxt(
     runtime_metadata_path = "metadata/westend_metadata.scale",
@@ -36,13 +39,11 @@ mod westend {}
 
 pub type WestendApi = westend::RuntimeApi<DefaultConfig, DefaultExtra<DefaultConfig>>;
 
-pub async fn run_and_subscribe_new_session_events(
-    client: &Client<DefaultConfig>,
-) -> Result<(), SkipperError> {
+pub async fn run_and_subscribe_new_session_events(skipper: &Skipper) -> Result<(), SkipperError> {
     info!("Check Validator on-chain status");
-    check_validator_status(client).await?;
+    check_validator_status(&skipper).await?;
     info!("Subscribe 'NewSession' on-chain finalized event");
-    let client = client.clone();
+    let client = skipper.client().clone();
     let sub = client.rpc().subscribe_finalized_events().await?;
     let decoder = client.events_decoder();
     let mut sub = EventSubscription::<DefaultConfig>::new(sub, &decoder);
@@ -52,7 +53,7 @@ pub async fn run_and_subscribe_new_session_events(
             match westend::session::events::NewSession::decode(&mut &raw.data[..]) {
                 Ok(event) => {
                     info!("Successfully decoded event {:?}", event);
-                    check_validator_status(&client).await?;
+                    check_validator_status(&skipper).await?;
                 }
                 Err(e) => return Err(SkipperError::CodecError(e)),
             }
@@ -62,15 +63,15 @@ pub async fn run_and_subscribe_new_session_events(
     Err(SkipperError::SubscriptionFinished)
 }
 
-async fn check_validator_status(client: &Client<DefaultConfig>) -> Result<(), SkipperError> {
-    let client = client.clone();
+async fn check_validator_status(skipper: &Skipper) -> Result<(), SkipperError> {
+    let client = skipper.client().clone();
     let api = client.to_runtime_api::<WestendApi>();
     let config = CONFIG.clone();
 
     // check hook paths
-    verify_hook("New Session", &config.hook_new_session_path);
-    verify_hook("Active next Era", &config.hook_active_next_era_path);
-    verify_hook("Inactive next Era", &config.hook_inactive_next_era_path);
+    verify_hook(HOOK_NEW_SESSION, &config.hook_new_session_path);
+    verify_hook(HOOK_ACTIVE_NEXT_ERA, &config.hook_active_next_era_path);
+    verify_hook(HOOK_INACTIVE_NEXT_ERA, &config.hook_inactive_next_era_path);
 
     let mut validators: Validators = Vec::new();
     for stash_str in config.stashes.iter() {
@@ -123,16 +124,28 @@ async fn check_validator_status(client: &Client<DefaultConfig>) -> Result<(), Sk
             .await?
         {
             let current_session_index = api.storage().session().current_index(None).await?;
-            let era_session_index = current_session_index - start_session_index;
+            let era_session_index = 1 + current_session_index - start_session_index;
 
-            info!(
-                "Era {} -> Session {} ({})",
-                active_era_index, current_session_index, era_session_index
+            let vip_sessions = match era_session_index {
+                1 => "FIRST ",
+                6 => "LAST ",
+                _ => "",
+            };
+
+            let message = format!(
+                "{}Session {} -> Era {} ({}/6)",
+                vip_sessions, current_session_index, active_era_index, era_session_index
             );
+            let formatted_message = format!("{}<br/>", message);
+            skipper
+                .send_message(&message, &formatted_message)
+                .await
+                .unwrap();
+            info!("{}", message);
 
             for v in validators.iter() {
                 try_call_hook(
-                    "New Session",
+                    HOOK_NEW_SESSION,
                     &config.hook_new_session_path,
                     vec![
                         v.stash.to_string(),
@@ -142,9 +155,17 @@ async fn check_validator_status(client: &Client<DefaultConfig>) -> Result<(), Sk
                         era_session_index.to_string(),
                     ],
                 )?;
+
+                let active = if v.is_active { "🟢" } else { "🔴" };
+                let message = format!("{} {}", active, v.stash);
+                let formatted_message = format!("{}<br/>", message);
+                skipper
+                    .send_message(&message, &formatted_message)
+                    .await
+                    .unwrap();
             }
 
-            if (era_session_index) == 5 {
+            if (era_session_index) == 6 {
                 info!("Era {} (last session)", active_era_index);
                 let queued_changed = api.storage().session().queued_changed(None).await?;
                 if queued_changed {
@@ -152,7 +173,7 @@ async fn check_validator_status(client: &Client<DefaultConfig>) -> Result<(), Sk
                         // If stash is not active and keys are queued for next Era -> trigger hook to get ready and warm up
                         if !v.is_active && v.is_queued {
                             try_call_hook(
-                                "Active next Era",
+                                HOOK_ACTIVE_NEXT_ERA,
                                 &config.hook_active_next_era_path,
                                 vec![
                                     v.stash.to_string(),
@@ -162,11 +183,21 @@ async fn check_validator_status(client: &Client<DefaultConfig>) -> Result<(), Sk
                                     format!("{}", current_session_index + 1),
                                 ],
                             )?;
+                            let message = format!(
+                                "🔵 {} -> ACTIVE Next Era {}",
+                                v.stash,
+                                active_era_index + 1
+                            );
+                            let formatted_message = format!("{}<br/>", message);
+                            skipper
+                                .send_message(&message, &formatted_message)
+                                .await
+                                .unwrap();
                         }
                         // If stash is active and keys are not queued for next Era trigger hook to inform operator
                         else if v.is_active && !v.is_queued {
                             try_call_hook(
-                                "Inactive next Era",
+                                HOOK_INACTIVE_NEXT_ERA,
                                 &config.hook_inactive_next_era_path,
                                 vec![
                                     v.stash.to_string(),
@@ -176,6 +207,16 @@ async fn check_validator_status(client: &Client<DefaultConfig>) -> Result<(), Sk
                                     format!("{}", current_session_index + 1),
                                 ],
                             )?;
+                            let message = format!(
+                                "🟡 {} -> INACTIVE Next Era {}",
+                                v.stash,
+                                active_era_index + 1
+                            );
+                            let formatted_message = format!("{}<br/>", message);
+                            skipper
+                                .send_message(&message, &formatted_message)
+                                .await
+                                .unwrap();
                         }
                     }
                 }

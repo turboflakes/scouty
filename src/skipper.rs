@@ -127,7 +127,7 @@ impl Skipper {
         &self.matrix
     }
 
-    async fn send_message(
+    pub async fn send_message(
         &self,
         message: &str,
         formatted_message: &str,
@@ -146,14 +146,10 @@ impl Skipper {
     async fn run_and_subscribe_new_session_events(&self) -> Result<(), SkipperError> {
         match self.runtime {
             SupportedRuntime::Polkadot => {
-                polkadot::run_and_subscribe_new_session_events(self.client()).await
+                polkadot::run_and_subscribe_new_session_events(self).await
             }
-            SupportedRuntime::Kusama => {
-                kusama::run_and_subscribe_new_session_events(self.client()).await
-            }
-            SupportedRuntime::Westend => {
-                westend::run_and_subscribe_new_session_events(self.client()).await
-            }
+            SupportedRuntime::Kusama => kusama::run_and_subscribe_new_session_events(self).await,
+            SupportedRuntime::Westend => westend::run_and_subscribe_new_session_events(self).await,
         }
     }
 }
@@ -183,6 +179,16 @@ fn spawn_and_restart_subscription_on_error() {
     task::block_on(t);
 }
 
+pub const HOOK_NEW_SESSION: &'static str = "Hook New Session";
+pub const HOOK_ACTIVE_NEXT_ERA: &'static str = "Hook Active Next Era";
+pub const HOOK_INACTIVE_NEXT_ERA: &'static str = "Hook Inactive Next Era";
+
+pub fn verify_hook(name: &str, filename: &str) {
+    if !Path::new(filename).exists() {
+        warn!("Hook script file * {} * not defined", name);
+    }
+}
+
 pub fn try_call_hook(name: &str, filename: &str, args: Vec<String>) -> Result<(), SkipperError> {
     if Path::new(filename).exists() {
         let output = Command::new(filename).args(args).output()?;
@@ -198,10 +204,4 @@ pub fn try_call_hook(name: &str, filename: &str, args: Vec<String>) -> Result<()
         raw_output.lines().for_each(|x| info!("> {}", x));
     }
     Ok(())
-}
-
-pub fn verify_hook(name: &str, filename: &str) {
-    if !Path::new(filename).exists() {
-        warn!("Script file * {} Hook * not defined", name);
-    }
 }
