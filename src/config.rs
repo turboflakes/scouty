@@ -192,7 +192,6 @@ fn get_config() -> Config {
         .long("hook-active-next-era-path")
         .takes_value(true)
         .value_name("FILE")
-        .default_value("./hooks/active_next_era.sh")
         .help(
           "Sets the path for the script that is called on the last session of an era, if the stash is NOT ACTIVE and keys are queued for the next Session/Era.",
         ),
@@ -202,7 +201,6 @@ fn get_config() -> Config {
         .long("hook-inactive-next-era-path")
         .takes_value(true)
         .value_name("FILE")
-        .default_value("./hooks/inactive_next_era.sh")
         .help(
           "Sets the path for the script that is called on the last session of an era, if the stash is active and keys are NOT QUEUED for the next Session/Era.",
         ),

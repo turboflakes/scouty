@@ -166,9 +166,10 @@ async fn check_validator_status(skipper: &Skipper) -> Result<(), SkipperError> {
             }
 
             if (era_session_index) == 6 {
-                info!("Era {} (last session)", active_era_index);
                 let queued_changed = api.storage().session().queued_changed(None).await?;
                 if queued_changed {
+                    let next_era_index = active_era_index + 1;
+                    let next_session_index = current_session_index + 1;
                     for v in validators.iter() {
                         // If stash is not active and keys are queued for next Era -> trigger hook to get ready and warm up
                         if !v.is_active && v.is_queued {
@@ -179,14 +180,14 @@ async fn check_validator_status(skipper: &Skipper) -> Result<(), SkipperError> {
                                     v.stash.to_string(),
                                     active_era_index.to_string(),
                                     current_session_index.to_string(),
-                                    format!("{}", active_era_index + 1),
-                                    format!("{}", current_session_index + 1),
+                                    format!("{}", next_era_index),
+                                    format!("{}", next_session_index),
                                 ],
                             )?;
                             let message = format!(
                                 "🔵 {} -> ACTIVE Next Era {}",
                                 v.stash,
-                                active_era_index + 1
+                                next_era_index
                             );
                             let formatted_message = format!("{}<br/>", message);
                             skipper
@@ -203,14 +204,14 @@ async fn check_validator_status(skipper: &Skipper) -> Result<(), SkipperError> {
                                     v.stash.to_string(),
                                     active_era_index.to_string(),
                                     current_session_index.to_string(),
-                                    format!("{}", active_era_index + 1),
-                                    format!("{}", current_session_index + 1),
+                                    format!("{}", next_era_index),
+                                    format!("{}", next_session_index),
                                 ],
                             )?;
                             let message = format!(
                                 "🟡 {} -> INACTIVE Next Era {}",
                                 v.stash,
-                                active_era_index + 1
+                                next_era_index
                             );
                             let formatted_message = format!("{}<br/>", message);
                             skipper

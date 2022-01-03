@@ -10,4 +10,4 @@
 # 4th - Next Era
 # 5th - Next Session 
 #
-echo "🟠 $1 -> Status will be ACTIVE 🟢 next Era $4"
+echo "🔵 $1 -> ACTIVE Next Era $4"
