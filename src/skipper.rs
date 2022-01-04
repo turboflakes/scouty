@@ -179,9 +179,9 @@ fn spawn_and_restart_subscription_on_error() {
     task::block_on(t);
 }
 
-pub const HOOK_NEW_SESSION: &'static str = "Hook New Session";
-pub const HOOK_ACTIVE_NEXT_ERA: &'static str = "Hook Active Next Era";
-pub const HOOK_INACTIVE_NEXT_ERA: &'static str = "Hook Inactive Next Era";
+pub const HOOK_NEW_SESSION: &'static str = "New session";
+pub const HOOK_ACTIVE_NEXT_ERA: &'static str = "Active next era";
+pub const HOOK_INACTIVE_NEXT_ERA: &'static str = "Inactive next era";
 
 pub fn verify_hook(name: &str, filename: &str) {
     if !Path::new(filename).exists() {
@@ -189,7 +189,11 @@ pub fn verify_hook(name: &str, filename: &str) {
     }
 }
 
-pub fn try_call_hook(name: &str, filename: &str, args: Vec<String>) -> Result<(), SkipperError> {
+pub fn try_call_hook(
+    name: &str,
+    filename: &str,
+    args: Vec<String>,
+) -> Result<Vec<u8>, SkipperError> {
     if Path::new(filename).exists() {
         let output = Command::new(filename).args(args).output()?;
 
@@ -200,8 +204,7 @@ pub fn try_call_hook(name: &str, filename: &str, args: Vec<String>) -> Result<()
             )));
         }
 
-        let raw_output = String::from_utf8(output.stdout)?;
-        raw_output.lines().for_each(|x| info!("> {}", x));
+        return Ok(output.stdout);
     }
-    Ok(())
+    Ok(Vec::new())
 }

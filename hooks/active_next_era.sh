@@ -18,6 +18,6 @@
 # 
 # ***** START *****
 #
-echo "🔵 $1 -> ACTIVE Next Era $4"
+echo "! e.g. Warm up! This validator will be ACTIVE next era $4"
 #
 # ***** END *****

@@ -18,11 +18,12 @@
 # 
 # ***** START *****
 #
+echo "! e.g. write something cool here"
 if [ "$2" = "true" ]
 then
-  echo "!🟢 $1 -> Session $4 ($5) | Era $3"
+  echo "!🟢 $1 (Session $4 ($5) -> Era $3)"
 else
-  echo "!🔴 $1 -> Session $4 ($5) | Era $3"
+  echo "!🔴 $1 (Session $4 ($5) -> Era $3)"
 fi
 #
 # ***** END *****

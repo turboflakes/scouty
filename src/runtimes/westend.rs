@@ -21,11 +21,11 @@
 
 use crate::config::CONFIG;
 use crate::errors::SkipperError;
+use crate::report::{Hook, Network, RawData, Report, Validator, Validators};
 use crate::skipper::{
     try_call_hook, verify_hook, Skipper, HOOK_ACTIVE_NEXT_ERA, HOOK_INACTIVE_NEXT_ERA,
     HOOK_NEW_SESSION,
 };
-use crate::validator::{Validator, Validators};
 use codec::Decode;
 use log::{debug, info};
 use std::{result::Result, str::FromStr};
@@ -41,7 +41,7 @@ pub type WestendApi = westend::RuntimeApi<DefaultConfig, DefaultExtra<DefaultCon
 
 pub async fn run_and_subscribe_new_session_events(skipper: &Skipper) -> Result<(), SkipperError> {
     info!("Check Validator on-chain status");
-    check_validator_status(&skipper).await?;
+    try_run_hooks(&skipper).await?;
     info!("Subscribe 'NewSession' on-chain finalized event");
     let client = skipper.client().clone();
     let sub = client.rpc().subscribe_finalized_events().await?;
@@ -53,7 +53,7 @@ pub async fn run_and_subscribe_new_session_events(skipper: &Skipper) -> Result<(
             match westend::session::events::NewSession::decode(&mut &raw.data[..]) {
                 Ok(event) => {
                     info!("Successfully decoded event {:?}", event);
-                    check_validator_status(&skipper).await?;
+                    try_run_hooks(&skipper).await?;
                 }
                 Err(e) => return Err(SkipperError::CodecError(e)),
             }
@@ -63,9 +63,9 @@ pub async fn run_and_subscribe_new_session_events(skipper: &Skipper) -> Result<(
     Err(SkipperError::SubscriptionFinished)
 }
 
-async fn check_validator_status(skipper: &Skipper) -> Result<(), SkipperError> {
-    let client = skipper.client().clone();
-    let api = client.to_runtime_api::<WestendApi>();
+async fn try_run_hooks(skipper: &Skipper) -> Result<(), SkipperError> {
+    let client = skipper.client();
+    let api = client.clone().to_runtime_api::<WestendApi>();
     let config = CONFIG.clone();
 
     // check hook paths
@@ -73,158 +73,173 @@ async fn check_validator_status(skipper: &Skipper) -> Result<(), SkipperError> {
     verify_hook(HOOK_ACTIVE_NEXT_ERA, &config.hook_active_next_era_path);
     verify_hook(HOOK_INACTIVE_NEXT_ERA, &config.hook_inactive_next_era_path);
 
-    let mut validators: Validators = Vec::new();
-    for stash_str in config.stashes.iter() {
-        let stash = AccountId32::from_str(stash_str)?;
-        let v = Validator::new(stash.clone());
-        validators.push(v);
-    }
+    // Get Network name
+    let chain_name = client.rpc().system_chain().await?;
 
-    // Verify session queued keys
-    let queued_keys = api.storage().session().queued_keys(None).await?;
-    for (account_id, _session_keys) in &queued_keys {
-        debug!("{}", account_id.to_string());
-        for v in validators.iter_mut() {
-            if account_id == &v.stash {
-                debug!("account_id {} is_queued", account_id.to_string());
-                v.is_queued = true
-            }
+    // Get Era index
+    let active_era_index = match api.storage().staking().active_era(None).await? {
+        Some(info) => info.index,
+        None => return Err(SkipperError::Other("Active era not available".into())),
+    };
+
+    // Get current session
+    let current_session_index = api.storage().session().current_index(None).await?;
+
+    // Get start session index
+    let start_session_index = match api
+        .storage()
+        .staking()
+        .eras_start_session_index(active_era_index, None)
+        .await?
+    {
+        Some(index) => index,
+        None => {
+            return Err(SkipperError::Other(
+                "Start session index not available".into(),
+            ))
         }
-    }
+    };
 
-    // Verify session active validators
-    let active_validators = api.storage().session().validators(None).await?;
+    // Eras session index
+    let eras_session_index = 1 + current_session_index - start_session_index;
+
+    // Get session keys queued status
+    let queued_session_keys_changed = api.storage().session().queued_changed(None).await?;
+
+    // Set network info
+    let network = Network {
+        name: chain_name,
+        active_era_index: active_era_index,
+        current_session_index: current_session_index,
+        eras_session_index: eras_session_index,
+        queued_session_keys_changed: queued_session_keys_changed,
+    };
+    debug!("network {:?}", network);
+
+    // Collect validators info based on config stashes
+    let mut validators = collect_validators_data(&skipper).await?;
+
+    // Try to run hooks for each stash
     for v in validators.iter_mut() {
-        // Check if validator is in active set
-        v.is_active = active_validators.contains(&v.stash);
-    }
+        // Try HOOK_NEW_SESSION
+        let stdout = try_call_hook(
+            HOOK_NEW_SESSION,
+            &config.hook_new_session_path,
+            vec![
+                v.stash.to_string(),
+                v.is_active.to_string(),
+                active_era_index.to_string(),
+                current_session_index.to_string(),
+                eras_session_index.to_string(),
+            ],
+        )?;
 
-    if let Some(active_era_info) = api.storage().staking().active_era(None).await? {
-        // info!("active_era_info {:?}", active_era_info);
-        // if let Some(start) = active_era_info.start {
-        //     let now = api.storage().timestamp().now(None).await?;
-        //     // Inside the first session of an Era
-        //     // 1 hour -> 1*60*60*1000 = 3_600_000 milliseconds
-        //     if (now - start) <= 3_600_000 {
-        //         info!("FIRST session of the era!");
-        //     }
-        //     // Inside the last session of an Era
-        //     // 5 hours -> 5*60*60*1000 = 18_000_000 milliseconds
-        //     if (now - start) >= 18_000_000 {
-        //         info!("LAST session of the era!");
-        //     }
-        // }
+        let hook = Hook {
+            name: HOOK_NEW_SESSION.to_string(),
+            filename: config.hook_new_session_path.to_string(),
+            stdout: stdout,
+        };
+        v.hooks.push(hook);
 
-        let active_era_index = active_era_info.index;
+        if (eras_session_index) == 6 && queued_session_keys_changed {
+            let next_era_index = active_era_index + 1;
+            let next_session_index = current_session_index + 1;
 
-        if let Some(start_session_index) = api
-            .storage()
-            .staking()
-            .eras_start_session_index(active_era_index, None)
-            .await?
-        {
-            let current_session_index = api.storage().session().current_index(None).await?;
-            let era_session_index = 1 + current_session_index - start_session_index;
-
-            let vip_sessions = match era_session_index {
-                1 => "FIRST ",
-                6 => "LAST ",
-                _ => "",
-            };
-
-            let message = format!(
-                "{}Session {} -> Era {} ({}/6)",
-                vip_sessions, current_session_index, active_era_index, era_session_index
-            );
-            let formatted_message = format!("{}<br/>", message);
-            skipper
-                .send_message(&message, &formatted_message)
-                .await
-                .unwrap();
-            info!("{}", message);
-
-            for v in validators.iter() {
-                try_call_hook(
-                    HOOK_NEW_SESSION,
-                    &config.hook_new_session_path,
+            // Try HOOK_ACTIVE_NEXT_ERA
+            // If stash is not active and keys are queued for next Era -> trigger hook to get ready and warm up
+            if !v.is_active && v.is_queued {
+                let stdout = try_call_hook(
+                    HOOK_ACTIVE_NEXT_ERA,
+                    &config.hook_active_next_era_path,
                     vec![
                         v.stash.to_string(),
-                        v.is_active.to_string(),
                         active_era_index.to_string(),
                         current_session_index.to_string(),
-                        era_session_index.to_string(),
+                        format!("{}", next_era_index),
+                        format!("{}", next_session_index),
                     ],
                 )?;
 
-                let active = if v.is_active { "🟢" } else { "🔴" };
-                let message = format!("{} {}", active, v.stash);
-                let formatted_message = format!("{}<br/>", message);
-                skipper
-                    .send_message(&message, &formatted_message)
-                    .await
-                    .unwrap();
+                let hook = Hook {
+                    name: HOOK_ACTIVE_NEXT_ERA.to_string(),
+                    filename: config.hook_active_next_era_path.to_string(),
+                    stdout: stdout,
+                };
+                v.hooks.push(hook);
             }
 
-            if (era_session_index) == 6 {
-                let queued_changed = api.storage().session().queued_changed(None).await?;
-                if queued_changed {
-                    let next_era_index = active_era_index + 1;
-                    let next_session_index = current_session_index + 1;
-                    for v in validators.iter() {
-                        // If stash is not active and keys are queued for next Era -> trigger hook to get ready and warm up
-                        if !v.is_active && v.is_queued {
-                            try_call_hook(
-                                HOOK_ACTIVE_NEXT_ERA,
-                                &config.hook_active_next_era_path,
-                                vec![
-                                    v.stash.to_string(),
-                                    active_era_index.to_string(),
-                                    current_session_index.to_string(),
-                                    format!("{}", next_era_index),
-                                    format!("{}", next_session_index),
-                                ],
-                            )?;
-                            let message = format!(
-                                "🔵 {} -> ACTIVE Next Era {}",
-                                v.stash,
-                                next_era_index
-                            );
-                            let formatted_message = format!("{}<br/>", message);
-                            skipper
-                                .send_message(&message, &formatted_message)
-                                .await
-                                .unwrap();
-                        }
-                        // If stash is active and keys are not queued for next Era trigger hook to inform operator
-                        else if v.is_active && !v.is_queued {
-                            try_call_hook(
-                                HOOK_INACTIVE_NEXT_ERA,
-                                &config.hook_inactive_next_era_path,
-                                vec![
-                                    v.stash.to_string(),
-                                    active_era_index.to_string(),
-                                    current_session_index.to_string(),
-                                    format!("{}", next_era_index),
-                                    format!("{}", next_session_index),
-                                ],
-                            )?;
-                            let message = format!(
-                                "🟡 {} -> INACTIVE Next Era {}",
-                                v.stash,
-                                next_era_index
-                            );
-                            let formatted_message = format!("{}<br/>", message);
-                            skipper
-                                .send_message(&message, &formatted_message)
-                                .await
-                                .unwrap();
-                        }
-                    }
-                }
+            // Try HOOK_INACTIVE_NEXT_ERA
+            // If stash is active and keys are not queued for next Era trigger hook to inform operator
+            if v.is_active && !v.is_queued {
+                let stdout = try_call_hook(
+                    HOOK_INACTIVE_NEXT_ERA,
+                    &config.hook_inactive_next_era_path,
+                    vec![
+                        v.stash.to_string(),
+                        active_era_index.to_string(),
+                        current_session_index.to_string(),
+                        format!("{}", next_era_index),
+                        format!("{}", next_session_index),
+                    ],
+                )?;
+
+                let hook = Hook {
+                    name: HOOK_INACTIVE_NEXT_ERA.to_string(),
+                    filename: config.hook_inactive_next_era_path.to_string(),
+                    stdout: stdout,
+                };
+                v.hooks.push(hook);
             }
         }
     }
 
-    debug!("{:?}", validators);
+    // Prepare notification report
+    debug!("validators {:?}", validators);
+
+    let data = RawData {
+        network,
+        validators,
+    };
+
+    let report = Report::from(data);
+    skipper
+        .send_message(&report.message(), &report.formatted_message())
+        .await?;
+
     Ok(())
+}
+
+async fn collect_validators_data(skipper: &Skipper) -> Result<Validators, SkipperError> {
+    let client = skipper.client().clone();
+    let api = client.to_runtime_api::<WestendApi>();
+    let config = CONFIG.clone();
+
+    // Verify session active validators
+    let active_validators = api.storage().session().validators(None).await?;
+
+    // Verify session queued keys
+    let queued_keys = api.storage().session().queued_keys(None).await?;
+
+    let mut validators: Validators = Vec::new();
+    for stash_str in config.stashes.iter() {
+        let stash = AccountId32::from_str(stash_str)?;
+        let mut v = Validator::new(stash.clone());
+
+        // Check if validator is in active set
+        v.is_active = active_validators.contains(&v.stash);
+
+        // Check if validator session key is queued
+        for (account_id, _session_keys) in &queued_keys {
+            if account_id == &v.stash {
+                debug!("account_id {} is_queued", account_id.to_string());
+                v.is_queued = true;
+                break;
+            }
+        }
+
+        validators.push(v);
+    }
+
+    debug!("validators {:?}", validators);
+    Ok(validators)
 }

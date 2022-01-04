@@ -22,9 +22,9 @@
 mod config;
 mod errors;
 mod matrix;
+mod report;
 mod runtimes;
 mod skipper;
-mod validator;
 
 use crate::config::CONFIG;
 use crate::skipper::Skipper;

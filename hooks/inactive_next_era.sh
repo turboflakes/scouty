@@ -18,6 +18,6 @@
 # 
 # ***** START *****
 #
-echo "🟡 $1 -> INACTIVE Next Era $4"
+echo "! e.g. Last sprint! This validator will be INACTIVE next era $4"
 #
 # ***** END *****
