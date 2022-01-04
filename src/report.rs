@@ -20,6 +20,7 @@
 // SOFTWARE.
 use crate::config::CONFIG;
 use log::info;
+use serde::Deserialize;
 use subxt::sp_runtime::AccountId32;
 
 #[derive(Debug)]
@@ -31,18 +32,26 @@ pub struct Network {
     pub queued_session_keys_changed: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Default)]
 pub struct Hook {
+    #[serde(default)]
     pub name: String,
+    #[serde(default)]
     pub filename: String,
+    #[serde(default)]
     pub stdout: Vec<u8>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Default)]
 pub struct Validator {
     pub stash: AccountId32,
+    #[serde(default)]
+    pub name: String,
+    #[serde(default)]
     pub is_active: bool,
+    #[serde(default)]
     pub is_queued: bool,
+    #[serde(default)]
     pub hooks: Vec<Hook>,
 }
 
@@ -50,9 +59,11 @@ impl Validator {
     pub fn new(stash: AccountId32) -> Validator {
         Validator {
             stash,
-            is_active: false,
-            is_queued: false,
-            hooks: Vec::new(),
+            ..Default::default()
+            // pub name: String,
+            // is_active: false,
+            // is_queued: false,
+            // hooks: Vec::new(),
         }
     }
 }
@@ -122,20 +133,14 @@ impl From<RawData> for Report {
             env!("CARGO_PKG_VERSION")
         ));
 
-        let vip_sessions = match data.network.eras_session_index {
-            1 => "🏁 ",
-            6 => "🏳️ ",
-            _ => "🚩",
-        };
-
         // Network info
         report.add_break();
         report.add_raw_text(format!(
-            "{} <b>{}</b> started session {} -> {}/6 of era {}",
-            vip_sessions,
+            "{} <b>{}</b> -> {} session ({}) of era {}",
+            session_flag(data.network.eras_session_index),
             data.network.name,
+            session_ordinal_number(data.network.eras_session_index),
             data.network.current_session_index,
-            data.network.eras_session_index,
             data.network.active_era_index
         ));
 
@@ -145,11 +150,11 @@ impl From<RawData> for Report {
 
             let is_active_desc = if validator.is_active { "🟢" } else { "🔴" };
             report.add_raw_text(format!(
-                "{} <a href=\"https://{}.subscan.io/validator/{}\">{}</a>",
+                "{} <b><a href=\"https://{}.subscan.io/validator/{}\">{}</a></b>",
                 is_active_desc,
                 data.network.name.to_lowercase(),
                 validator.stash,
-                validator.stash,
+                validator.name,
             ));
             for hook in validator.hooks {
                 report.add_text(format!("🪝 <code>{}</code>", hook.filename));
@@ -171,5 +176,23 @@ impl From<RawData> for Report {
         report.log();
 
         report
+    }
+}
+
+fn session_flag(index: u32) -> String {
+    match index {
+        1 => "🏁".to_string(),
+        6 => "🏳️".to_string(),
+        _ => "🚩".to_string(),
+    }
+}
+
+fn session_ordinal_number(index: u32) -> String {
+    match index {
+        1 => "1st".to_string(),
+        2 => "2nd".to_string(),
+        3 => "3rd".to_string(),
+        6 => "<b>last</b>".to_string(),
+        _ => format!("{}th", index),
     }
 }

@@ -26,7 +26,7 @@ use crate::skipper::{
     try_call_hook, verify_hook, Skipper, HOOK_ACTIVE_NEXT_ERA, HOOK_INACTIVE_NEXT_ERA,
     HOOK_NEW_SESSION,
 };
-
+use async_recursion::async_recursion;
 use codec::Decode;
 use log::{debug, info};
 use std::{result::Result, str::FromStr};
@@ -128,7 +128,9 @@ async fn try_run_hooks(skipper: &Skipper) -> Result<(), SkipperError> {
             &config.hook_new_session_path,
             vec![
                 v.stash.to_string(),
+                v.name.to_string(),
                 v.is_active.to_string(),
+                v.is_queued.to_string(),
                 active_era_index.to_string(),
                 current_session_index.to_string(),
                 eras_session_index.to_string(),
@@ -154,8 +156,7 @@ async fn try_run_hooks(skipper: &Skipper) -> Result<(), SkipperError> {
                     &config.hook_active_next_era_path,
                     vec![
                         v.stash.to_string(),
-                        active_era_index.to_string(),
-                        current_session_index.to_string(),
+                        v.name.to_string(),
                         format!("{}", next_era_index),
                         format!("{}", next_session_index),
                     ],
@@ -177,8 +178,7 @@ async fn try_run_hooks(skipper: &Skipper) -> Result<(), SkipperError> {
                     &config.hook_inactive_next_era_path,
                     vec![
                         v.stash.to_string(),
-                        active_era_index.to_string(),
-                        current_session_index.to_string(),
+                        v.name.to_string(),
                         format!("{}", next_era_index),
                         format!("{}", next_session_index),
                     ],
@@ -226,6 +226,9 @@ async fn collect_validators_data(skipper: &Skipper) -> Result<Validators, Skippe
         let stash = AccountId32::from_str(stash_str)?;
         let mut v = Validator::new(stash.clone());
 
+        // Get validator name
+        v.name = get_display_name(&skipper, &stash, None).await?;
+
         // Check if validator is in active set
         v.is_active = active_validators.contains(&v.stash);
 
@@ -243,4 +246,93 @@ async fn collect_validators_data(skipper: &Skipper) -> Result<Validators, Skippe
 
     debug!("validators {:?}", validators);
     Ok(validators)
+}
+
+#[async_recursion]
+async fn get_display_name(
+    skipper: &Skipper,
+    stash: &AccountId32,
+    sub_account_name: Option<String>,
+) -> Result<String, SkipperError> {
+    let client = skipper.client();
+    let api = client.clone().to_runtime_api::<KusamaApi>();
+
+    match api
+        .storage()
+        .identity()
+        .identity_of(stash.clone(), None)
+        .await?
+    {
+        Some(identity) => {
+            debug!("identity {:?}", identity);
+            let parent = parse_identity_data(identity.info.display);
+            let name = match sub_account_name {
+                Some(child) => format!("{}/{}", parent, child),
+                None => parent,
+            };
+            Ok(name)
+        }
+        None => {
+            if let Some((parent_account, data)) = api
+                .storage()
+                .identity()
+                .super_of(stash.clone(), None)
+                .await?
+            {
+                let sub_account_name = parse_identity_data(data);
+                return get_display_name(
+                    &skipper,
+                    &parent_account,
+                    Some(sub_account_name.to_string()),
+                )
+                .await;
+            } else {
+                let s = &stash.to_string();
+                Ok(format!("{}...{}", &s[..6], &s[s.len() - 6..]))
+            }
+        }
+    }
+}
+
+fn parse_identity_data(data: kusama::runtime_types::pallet_identity::types::Data) -> String {
+    match data {
+        kusama::runtime_types::pallet_identity::types::Data::Raw0(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw1(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw2(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw3(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw4(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw5(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw6(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw7(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw8(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw9(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw10(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw11(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw12(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw13(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw14(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw15(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw16(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw17(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw18(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw19(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw20(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw21(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw22(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw23(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw24(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw25(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw26(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw27(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw28(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw29(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw30(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw31(bytes) => str(bytes.to_vec()),
+        kusama::runtime_types::pallet_identity::types::Data::Raw32(bytes) => str(bytes.to_vec()),
+        _ => format!("???"),
+    }
+}
+
+fn str(bytes: Vec<u8>) -> String {
+    format!("{}", String::from_utf8(bytes).expect("Identity not utf-8"))
 }
