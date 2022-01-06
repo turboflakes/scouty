@@ -60,10 +60,6 @@ impl Validator {
         Validator {
             stash,
             ..Default::default()
-            // pub name: String,
-            // is_active: false,
-            // is_queued: false,
-            // hooks: Vec::new(),
         }
     }
 }

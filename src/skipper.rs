@@ -31,7 +31,8 @@ use crate::runtimes::{
 use async_std::task;
 use log::{error, info, warn};
 use std::path::Path;
-use std::{convert::TryInto, process::Command, result::Result, thread, time};
+use std::{convert::TryInto, process::Command, process::Stdio, result::Result, thread, time};
+use std::io::{BufRead, BufReader};
 use subxt::{sp_core::crypto, Client, ClientBuilder, DefaultConfig};
 
 pub async fn create_substrate_node_client(
@@ -194,17 +195,30 @@ pub fn try_call_hook(
     filename: &str,
     args: Vec<String>,
 ) -> Result<Vec<u8>, SkipperError> {
+
     if Path::new(filename).exists() {
-        let output = Command::new(filename).args(args).output()?;
+        info!("Run: {} {}", filename, args.join(" "));
 
-        if !output.status.success() {
-            return Err(SkipperError::Other(format!(
-                "Hook script {} executed with error",
-                name
-            )));
-        }
+        let stdout = Command::new(filename).args(args)
+            .stdout(Stdio::piped())
+            .spawn()?
+            .stdout
+            .ok_or_else(|| SkipperError::Other(format!("Hook script {} ({}) executed with error", name, filename)))?;
 
-        return Ok(output.stdout);
+        let mut output: Vec<u8> = Vec::new();
+
+        let reader = BufReader::new(stdout);
+
+        reader
+            .lines()
+            .filter_map(|line| line.ok())
+            .for_each(|line| {
+                info!("{}", line);
+                output.extend(format!("{}\n",line).as_bytes().to_vec());
+            });
+        
+        return Ok(output);
     }
+
     Ok(Vec::new())
 }
