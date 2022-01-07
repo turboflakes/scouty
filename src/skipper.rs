@@ -213,7 +213,7 @@ pub fn try_call_hook(
             .lines()
             .filter_map(|line| line.ok())
             .for_each(|line| {
-                info!("{}", line);
+                info!("$ {}", line);
                 output.extend(format!("{}\n",line).as_bytes().to_vec());
             });
         
