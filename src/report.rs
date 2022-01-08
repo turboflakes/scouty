@@ -52,6 +52,8 @@ pub struct Validator {
     #[serde(default)]
     pub is_queued: bool,
     #[serde(default)]
+    pub queued_session_keys: Vec<u8>,
+    #[serde(default)]
     pub hooks: Vec<Hook>,
 }
 

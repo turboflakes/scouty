@@ -27,18 +27,21 @@ use crate::skipper::{
     HOOK_NEW_SESSION,
 };
 use async_recursion::async_recursion;
-use codec::Decode;
+use codec::{Decode, Encode};
 use log::{debug, info};
 use std::{result::Result, str::FromStr};
-use subxt::{sp_runtime::AccountId32, DefaultConfig, DefaultExtra, EventSubscription};
+use subxt::{
+    sp_core::hexdisplay::HexDisplay, sp_runtime::AccountId32, DefaultConfig, DefaultExtra,
+    EventSubscription,
+};
 
 #[subxt::subxt(
     runtime_metadata_path = "metadata/westend_metadata.scale",
     generated_type_derives = "Clone, Debug"
 )]
-mod westend {}
+mod api {}
 
-pub type WestendApi = westend::RuntimeApi<DefaultConfig, DefaultExtra<DefaultConfig>>;
+pub type WestendApi = api::RuntimeApi<DefaultConfig, DefaultExtra<DefaultConfig>>;
 
 pub async fn run_and_subscribe_new_session_events(skipper: &Skipper) -> Result<(), SkipperError> {
     info!("Check Validator on-chain status");
@@ -48,10 +51,10 @@ pub async fn run_and_subscribe_new_session_events(skipper: &Skipper) -> Result<(
     let sub = client.rpc().subscribe_finalized_events().await?;
     let decoder = client.events_decoder();
     let mut sub = EventSubscription::<DefaultConfig>::new(sub, &decoder);
-    sub.filter_event::<westend::session::events::NewSession>();
+    sub.filter_event::<api::session::events::NewSession>();
     while let Some(result) = sub.next().await {
         if let Ok(raw) = result {
-            match westend::session::events::NewSession::decode(&mut &raw.data[..]) {
+            match api::session::events::NewSession::decode(&mut &raw.data[..]) {
                 Ok(event) => {
                     info!("Successfully decoded event {:?}", event);
                     try_run_hooks(&skipper).await?;
@@ -129,6 +132,7 @@ async fn try_run_hooks(skipper: &Skipper) -> Result<(), SkipperError> {
             vec![
                 v.stash.to_string(),
                 v.name.to_string(),
+                format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
                 v.is_active.to_string(),
                 v.is_queued.to_string(),
                 active_era_index.to_string(),
@@ -157,6 +161,7 @@ async fn try_run_hooks(skipper: &Skipper) -> Result<(), SkipperError> {
                     vec![
                         v.stash.to_string(),
                         v.name.to_string(),
+                        format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
                         format!("{}", next_era_index),
                         format!("{}", next_session_index),
                     ],
@@ -179,6 +184,7 @@ async fn try_run_hooks(skipper: &Skipper) -> Result<(), SkipperError> {
                     vec![
                         v.stash.to_string(),
                         v.name.to_string(),
+                        format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
                         format!("{}", next_era_index),
                         format!("{}", next_session_index),
                     ],
@@ -233,10 +239,10 @@ async fn collect_validators_data(skipper: &Skipper) -> Result<Validators, Skippe
         v.is_active = active_validators.contains(&v.stash);
 
         // Check if validator session key is queued
-        for (account_id, _session_keys) in &queued_keys {
+        for (account_id, session_keys) in &queued_keys {
             if account_id == &v.stash {
-                debug!("account_id {} is_queued", account_id.to_string());
                 v.is_queued = true;
+                v.queued_session_keys = session_keys.encode();
                 break;
             }
         }
@@ -294,41 +300,41 @@ async fn get_display_name(
     }
 }
 
-fn parse_identity_data(data: westend::runtime_types::pallet_identity::types::Data) -> String {
+fn parse_identity_data(data: api::runtime_types::pallet_identity::types::Data) -> String {
     match data {
-        westend::runtime_types::pallet_identity::types::Data::Raw0(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw1(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw2(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw3(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw4(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw5(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw6(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw7(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw8(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw9(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw10(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw11(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw12(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw13(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw14(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw15(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw16(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw17(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw18(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw19(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw20(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw21(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw22(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw23(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw24(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw25(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw26(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw27(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw28(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw29(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw30(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw31(bytes) => str(bytes.to_vec()),
-        westend::runtime_types::pallet_identity::types::Data::Raw32(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw0(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw1(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw2(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw3(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw4(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw5(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw6(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw7(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw8(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw9(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw10(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw11(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw12(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw13(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw14(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw15(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw16(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw17(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw18(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw19(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw20(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw21(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw22(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw23(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw24(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw25(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw26(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw27(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw28(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw29(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw30(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw31(bytes) => str(bytes.to_vec()),
+        api::runtime_types::pallet_identity::types::Data::Raw32(bytes) => str(bytes.to_vec()),
         _ => format!("???"),
     }
 }
