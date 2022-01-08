@@ -132,9 +132,9 @@ async fn try_run_hooks(skipper: &Skipper) -> Result<(), SkipperError> {
             vec![
                 v.stash.to_string(),
                 v.name.to_string(),
+                format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
                 v.is_active.to_string(),
                 v.is_queued.to_string(),
-                format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
                 active_era_index.to_string(),
                 current_session_index.to_string(),
                 eras_session_index.to_string(),
