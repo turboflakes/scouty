@@ -21,6 +21,7 @@
 
 use crate::config::CONFIG;
 use crate::errors::MatrixError;
+use crate::runtimes::support::SupportedRuntime;
 use async_recursion::async_recursion;
 use base64::encode;
 use log::{debug, info, warn};
@@ -33,36 +34,6 @@ const MATRIX_URL: &str = "https://matrix.org/_matrix/client/r0";
 type AccessToken = String;
 type RoomID = String;
 type EventID = String;
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Chain {
-    Polkadot,
-    Kusama,
-    Westend,
-    Other,
-}
-
-impl std::fmt::Display for Chain {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Polkadot => write!(f, "Polkadot"),
-            Self::Kusama => write!(f, "Kusama"),
-            Self::Westend => write!(f, "Westend"),
-            Self::Other => write!(f, "Other"),
-        }
-    }
-}
-
-impl From<u16> for Chain {
-    fn from(v: u16) -> Self {
-        match v {
-            0 => Chain::Polkadot,
-            2 => Chain::Kusama,
-            42 => Chain::Westend,
-            _ => Chain::Other,
-        }
-    }
-}
 
 #[derive(Deserialize, Debug, Default)]
 struct Room {
@@ -92,7 +63,7 @@ fn define_private_room_alias_name(
 }
 
 impl Room {
-    fn new_private(chain: Chain) -> Room {
+    fn new_private(chain: SupportedRuntime) -> Room {
         let config = CONFIG.clone();
         let room_alias_name = define_private_room_alias_name(
             env!("CARGO_PKG_NAME"),
@@ -167,7 +138,7 @@ struct ErrorResponse {
 pub struct Matrix {
     pub client: reqwest::Client,
     access_token: Option<String>,
-    chain: Chain,
+    chain: SupportedRuntime,
     private_room_id: String,
     public_room_id: String,
     disabled: bool,
@@ -178,7 +149,7 @@ impl Default for Matrix {
         Matrix {
             client: reqwest::Client::new(),
             access_token: None,
-            chain: Chain::Westend,
+            chain: SupportedRuntime::Westend,
             private_room_id: String::from(""),
             public_room_id: String::from(""),
             disabled: false,
@@ -265,8 +236,8 @@ impl Matrix {
         }
     }
 
-    // Login user, get or create private room and join public room
-    pub async fn authenticate(&mut self, chain: Chain) -> Result<(), MatrixError> {
+    // Login user, get or create private room
+    pub async fn authenticate(&mut self, chain: SupportedRuntime) -> Result<(), MatrixError> {
         if self.disabled {
             return Ok(());
         }
