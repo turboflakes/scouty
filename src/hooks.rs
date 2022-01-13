@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use crate::errors::SkipperError;
+use crate::errors::ScoutyError;
 use log::{info, warn};
 use serde::Deserialize;
 use std::io::{BufRead, BufReader};
@@ -49,7 +49,7 @@ pub struct Hook {
 }
 
 impl Hook {
-    pub fn try_run(name: &str, filename: &str, args: Vec<String>) -> Result<Hook, SkipperError> {
+    pub fn try_run(name: &str, filename: &str, args: Vec<String>) -> Result<Hook, ScoutyError> {
         if Path::new(filename).exists() {
             info!("Run: {} {}", filename, args.join(" "));
 
@@ -59,7 +59,7 @@ impl Hook {
                 .spawn()?
                 .stdout
                 .ok_or_else(|| {
-                    SkipperError::Other(format!(
+                    ScoutyError::Other(format!(
                         "Hook script {} ({}) executed with error",
                         name, filename
                     ))

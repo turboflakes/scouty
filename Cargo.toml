@@ -1,8 +1,8 @@
 [package]
-name = "skipper"
+name = "scouty"
 version = "0.1.12"
 authors = ["Paulo <paulo@turboflakes.io>"]
-description = "Skipper is a command-line interface (CLI) to lead nodes every session" 
+description = "Scouty is a command-line interface (CLI) to lead nodes every session" 
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

@@ -20,7 +20,7 @@
 // SOFTWARE.
 
 use crate::config::{Config, CONFIG};
-use crate::errors::SkipperError;
+use crate::errors::ScoutyError;
 use crate::hooks::{
     Hook, HOOK_DEMOCRACY_STARTED, HOOK_NEW_ERA, HOOK_NEW_SESSION, HOOK_VALIDATOR_CHILLED,
     HOOK_VALIDATOR_OFFLINE, HOOK_VALIDATOR_SLASHED, HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA,
@@ -82,14 +82,14 @@ pub async fn create_or_await_substrate_node_client(config: Config) -> Client<Def
     }
 }
 
-pub struct Skipper {
+pub struct Scouty {
     runtime: SupportedRuntime,
     client: Client<DefaultConfig>,
     matrix: Matrix,
 }
 
-impl Skipper {
-    async fn new() -> Skipper {
+impl Scouty {
+    async fn new() -> Scouty {
         let client = create_or_await_substrate_node_client(CONFIG.clone()).await;
 
         let properties = client.properties();
@@ -115,7 +115,7 @@ impl Skipper {
                 Default::default()
             });
 
-        Skipper {
+        Scouty {
             runtime,
             client,
             matrix,
@@ -135,7 +135,7 @@ impl Skipper {
         &self,
         message: &str,
         formatted_message: &str,
-    ) -> Result<(), SkipperError> {
+    ) -> Result<(), ScoutyError> {
         self.matrix()
             .send_message(message, formatted_message)
             .await?;
@@ -147,7 +147,7 @@ impl Skipper {
         spawn_and_restart_subscription_on_error();
     }
 
-    async fn subscribe_on_chain_events(&self) -> Result<(), SkipperError> {
+    async fn subscribe_on_chain_events(&self) -> Result<(), ScoutyError> {
         let config = CONFIG.clone();
 
         // Verify if hooks scripts are available
@@ -178,15 +178,15 @@ fn spawn_and_restart_subscription_on_error() {
     let t = task::spawn(async {
         let config = CONFIG.clone();
         loop {
-            let c: Skipper = Skipper::new().await;
+            let c: Scouty = Scouty::new().await;
             if let Err(e) = c.subscribe_on_chain_events().await {
                 match e {
-                    SkipperError::SubscriptionFinished => warn!("{}", e),
-                    SkipperError::MatrixError(_) => warn!("Matrix message skipped!"),
+                    ScoutyError::SubscriptionFinished => warn!("{}", e),
+                    ScoutyError::MatrixError(_) => warn!("Matrix message skipped!"),
                     _ => {
                         error!("{}", e);
                         let message = format!("On hold for {} min!", config.error_interval);
-                        let formatted_message = format!("<br/>🚨 An error was raised -> <code>skipper</code> on hold for {} min while rescue is on the way 🚁 🚒 🚑 🚓<br/><br/>", config.error_interval);
+                        let formatted_message = format!("<br/>🚨 An error was raised -> <code>scouty</code> on hold for {} min while rescue is on the way 🚁 🚒 🚑 🚓<br/><br/>", config.error_interval);
                         c.send_message(&message, &formatted_message).await.unwrap();
                         thread::sleep(time::Duration::from_secs(60 * config.error_interval));
                         continue;

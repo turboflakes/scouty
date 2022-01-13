@@ -172,7 +172,7 @@ impl Matrix {
         }
         let config = CONFIG.clone();
         if let None = config.matrix_bot_user.find(":") {
-            return Err(MatrixError::Other(format!("matrix bot user '{}' does specifed the matrix server e.g. '@your-own-skipper-bot-account:matrix.org'", config.matrix_bot_user)));
+            return Err(MatrixError::Other(format!("matrix bot user '{}' does specifed the matrix server e.g. '@your-own-scouty-bot-account:matrix.org'", config.matrix_bot_user)));
         }
         let client = self.client.clone();
         let req = LoginRequest {
@@ -193,7 +193,7 @@ impl Matrix {
                 let response = res.json::<LoginResponse>().await?;
                 self.access_token = Some(response.access_token);
                 info!(
-                    "The 'Skipper Bot' user {} has been authenticated at {}",
+                    "The 'Scouty Bot' user {} has been authenticated at {}",
                     response.user_id, response.home_server
                 );
                 Ok(())
@@ -254,7 +254,7 @@ impl Matrix {
                 private_room.room_alias
             );
         }
-        // Change Skipper Bot display name
+        // Change Scouty Bot display name
         if !config.matrix_bot_display_name_disabled {
             self.change_bot_display_name().await?;
         }
@@ -268,7 +268,7 @@ impl Matrix {
                 let client = self.client.clone();
                 let v: Vec<&str> = config.matrix_user.split(":").collect();
                 let username = v.first().unwrap();
-                let display_name = format!("Skipper Bot ({})", &username[1..]);
+                let display_name = format!("Scouty Bot ({})", &username[1..]);
                 let mut data = HashMap::new();
                 data.insert("displayname", &display_name);
                 let user_id_encoded: String =
@@ -333,9 +333,9 @@ impl Matrix {
                 let client = self.client.clone();
                 let room: Room = Room::new_private(self.chain);
                 let req = CreateRoomRequest {
-                    name: format!("{} Skipper Bot (Private)", self.chain),
+                    name: format!("{} Scouty Bot (Private)", self.chain),
                     room_alias_name: room.room_alias_name.to_string(),
-                    topic: "Skipper Bot <> Leading nodes every session".to_string(),
+                    topic: "Scouty Bot <> Leading nodes every session".to_string(),
                     preset: "trusted_private_chat".to_string(),
                     invite: vec![config.matrix_user],
                     is_direct: true,

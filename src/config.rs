@@ -42,12 +42,12 @@ lazy_static! {
     pub static ref CONFIG: Config = get_config();
 }
 
-/// provides default value for interval if SKIPPER_INTERVAL env var is not set
+/// provides default value for interval if SCOUTY_INTERVAL env var is not set
 fn default_interval() -> u64 {
     21600
 }
 
-/// provides default value for error interval if SKIPPER_ERROR_INTERVAL env var is not set
+/// provides default value for error interval if SCOUTY_ERROR_INTERVAL env var is not set
 fn default_error_interval() -> u64 {
     30
 }
@@ -109,7 +109,7 @@ fn get_config() -> Config {
           .index(1)
           .possible_values(&["westend", "kusama", "polkadot"])
           .help(
-            "Sets the substrate-based chain for which 'skipper' will try to connect",
+            "Sets the substrate-based chain for which 'scouty' will try to connect",
           )
     )
     .arg(
@@ -120,55 +120,55 @@ fn get_config() -> Config {
       Arg::with_name("matrix-user")
         .long("matrix-user")
         .takes_value(true)
-        .help("Your regular matrix user. e.g. '@your-regular-matrix-account:matrix.org' this user account will receive notifications from your other 'Skipper Bot' matrix account."))
+        .help("Your regular matrix user. e.g. '@your-regular-matrix-account:matrix.org' this user account will receive notifications from your other 'Scouty Bot' matrix account."))
     .arg(
           Arg::with_name("matrix-bot-user")
             .long("matrix-bot-user")
             .takes_value(true)
-            .help("Your new 'Skipper Bot' matrix user. e.g. '@your-own-skipper-bot-account:matrix.org' this user account will be your 'Skipper Bot' which will be responsible to send messages/notifications to your private or public 'Skipper Bot' rooms."))
+            .help("Your new 'Scouty Bot' matrix user. e.g. '@your-own-scouty-bot-account:matrix.org' this user account will be your 'Scouty Bot' which will be responsible to send messages/notifications to your private or public 'Scouty Bot' rooms."))
     .arg(
       Arg::with_name("matrix-bot-password")
         .long("matrix-bot-password")
         .takes_value(true)
-        .help("Password for the 'Skipper Bot' matrix user sign in."))
+        .help("Password for the 'Scouty Bot' matrix user sign in."))
     .arg(
       Arg::with_name("disable-matrix")
         .long("disable-matrix")
         .help(
-          "Disable matrix bot for 'skipper'. (e.g. with this flag active 'skipper' will not send messages/notifications about claimed or unclaimed staking rewards to your private or public 'Skipper Bot' rooms) (https://matrix.org/)",
+          "Disable matrix bot for 'scouty'. (e.g. with this flag active 'scouty' will not send messages/notifications about claimed or unclaimed staking rewards to your private or public 'Scouty Bot' rooms) (https://matrix.org/)",
         ),
     )
     .arg(
       Arg::with_name("disable-public-matrix-room")
         .long("disable-public-matrix-room")
         .help(
-          "Disable notifications to matrix public rooms for 'skipper'. (e.g. with this flag active 'skipper' will not send messages/notifications about claimed or unclaimed staking rewards to any public 'Skipper Bot' room)",
+          "Disable notifications to matrix public rooms for 'scouty'. (e.g. with this flag active 'scouty' will not send messages/notifications about claimed or unclaimed staking rewards to any public 'Scouty Bot' room)",
         ),
     )
     .arg(
       Arg::with_name("disable-matrix-bot-display-name")
         .long("disable-matrix-bot-display-name")
         .help(
-          "Disable matrix bot display name update for 'skipper'. (e.g. with this flag active 'skipper' will not change the matrix bot user display name)",
+          "Disable matrix bot display name update for 'scouty'. (e.g. with this flag active 'scouty' will not change the matrix bot user display name)",
         ),
       )
     .arg(
       Arg::with_name("short")
         .long("short")
-        .help("Display only essential information (e.g. with this flag active 'skipper' will only send essential messages/notifications about claimed rewards)"))
+        .help("Display only essential information (e.g. with this flag active 'scouty' will only send essential messages/notifications about claimed rewards)"))
     .arg(
       Arg::with_name("error-interval")
         .long("error-interval")
         .takes_value(true)
         .default_value("30")
-        .help("Interval value (in minutes) from which 'skipper' will restart again in case of a critical error."))
+        .help("Interval value (in minutes) from which 'scouty' will restart again in case of a critical error."))
     .arg(
       Arg::with_name("stashes")
         .short("s")
         .long("stashes")
         .takes_value(true)
         .help(
-          "Validator stash addresses for which 'skipper view', 'skipper' or 'skipper rewards' will be applied. If needed specify more than one (e.g. stash_1,stash_2,stash_3).",
+          "Validator stash addresses for which 'scouty view', 'scouty' or 'scouty rewards' will be applied. If needed specify more than one (e.g. stash_1,stash_2,stash_3).",
         ),
     )
     .arg(
@@ -177,7 +177,7 @@ fn get_config() -> Config {
         .long("substrate-ws-url")
         .takes_value(true)
         .help(
-          "Substrate websocket endpoint for which 'skipper' will try to connect. (e.g. wss://kusama-rpc.polkadot.io) (NOTE: substrate_ws_url takes precedence than <CHAIN> argument)",
+          "Substrate websocket endpoint for which 'scouty' will try to connect. (e.g. wss://kusama-rpc.polkadot.io) (NOTE: substrate_ws_url takes precedence than <CHAIN> argument)",
         ),
     )
     .arg(
@@ -188,14 +188,14 @@ fn get_config() -> Config {
         .value_name("FILE")
         .default_value(".env")
         .help(
-          "Sets a custom config file path. The config file contains 'skipper' configuration variables.",
+          "Sets a custom config file path. The config file contains 'scouty' configuration variables.",
         ),
     )
     .arg(
       Arg::with_name("expose-nominators")
         .long("expose-nominators")
         .help(
-          "Expose the nominators stashes as a new positional argument in hooks. For each validator stash defined `skipper` will look for which nominators are currently backing it.",
+          "Expose the nominators stashes as a new positional argument in hooks. For each validator stash defined `scouty` will look for which nominators are currently backing it.",
         ),
       )
     .arg(
@@ -251,7 +251,7 @@ fn get_config() -> Config {
     match dotenv::from_filename(&config_path).ok() {
         Some(_) => info!("Loading configuration from {} file", &config_path),
         None => {
-            let config_path = env::var("SKIPPER_CONFIG_FILENAME").unwrap_or(".env".to_string());
+            let config_path = env::var("SCOUTY_CONFIG_FILENAME").unwrap_or(".env".to_string());
             if let Some(_) = dotenv::from_filename(&config_path).ok() {
                 info!("Loading configuration from {} file", &config_path);
             }
@@ -260,50 +260,50 @@ fn get_config() -> Config {
 
     match matches.value_of("CHAIN") {
         Some("westend") => {
-            env::set_var("SKIPPER_SUBSTRATE_WS_URL", "wss://westend-rpc.polkadot.io");
+            env::set_var("SCOUTY_SUBSTRATE_WS_URL", "wss://westend-rpc.polkadot.io");
         }
         Some("kusama") => {
-            env::set_var("SKIPPER_SUBSTRATE_WS_URL", "wss://kusama-rpc.polkadot.io");
+            env::set_var("SCOUTY_SUBSTRATE_WS_URL", "wss://kusama-rpc.polkadot.io");
         }
         Some("polkadot") => {
-            env::set_var("SKIPPER_SUBSTRATE_WS_URL", "wss://rpc.polkadot.io");
+            env::set_var("SCOUTY_SUBSTRATE_WS_URL", "wss://rpc.polkadot.io");
         }
         _ => {
-            if env::var("SKIPPER_SUBSTRATE_WS_URL").is_err() {
-                env::set_var("SKIPPER_SUBSTRATE_WS_URL", "ws://127.0.0.1:9944");
+            if env::var("SCOUTY_SUBSTRATE_WS_URL").is_err() {
+                env::set_var("SCOUTY_SUBSTRATE_WS_URL", "ws://127.0.0.1:9944");
             };
         }
     }
 
     if let Some(stashes) = matches.value_of("stashes") {
-        env::set_var("SKIPPER_STASHES", stashes);
+        env::set_var("SCOUTY_STASHES", stashes);
     }
 
     if let Some(substrate_ws_url) = matches.value_of("substrate-ws-url") {
-        env::set_var("SKIPPER_SUBSTRATE_WS_URL", substrate_ws_url);
+        env::set_var("SCOUTY_SUBSTRATE_WS_URL", substrate_ws_url);
     }
 
     if matches.is_present("debug") {
-        env::set_var("SKIPPER_IS_DEBUG", "true");
+        env::set_var("SCOUTY_IS_DEBUG", "true");
     }
 
     if matches.is_present("short") {
-        env::set_var("SKIPPER_IS_SHORT", "true");
+        env::set_var("SCOUTY_IS_SHORT", "true");
     }
 
     if let Some(hook_new_session_path) = matches.value_of("hook-new-session-path") {
-        env::set_var("SKIPPER_HOOK_NEW_SESSION_PATH", hook_new_session_path);
+        env::set_var("SCOUTY_HOOK_NEW_SESSION_PATH", hook_new_session_path);
     }
 
     if let Some(hook_new_era_path) = matches.value_of("hook-new-era-path") {
-        env::set_var("SKIPPER_HOOK_NEW_ERA_PATH", hook_new_era_path);
+        env::set_var("SCOUTY_HOOK_NEW_ERA_PATH", hook_new_era_path);
     }
 
     if let Some(hook_validator_starts_active_next_era_path) =
         matches.value_of("hook-validator-starts-active-next-era-path")
     {
         env::set_var(
-            "SKIPPER_HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA_PATH",
+            "SCOUTY_HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA_PATH",
             hook_validator_starts_active_next_era_path,
         );
     }
@@ -312,54 +312,54 @@ fn get_config() -> Config {
         matches.value_of("hook-validator-starts-inactive-next-era-path")
     {
         env::set_var(
-            "SKIPPER_HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA_PATH",
+            "SCOUTY_HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA_PATH",
             hook_validator_starts_inactive_next_era_path,
         );
     }
 
     if let Some(hook_validator_slashed_path) = matches.value_of("hook-validator-slashed-path") {
         env::set_var(
-            "SKIPPER_HOOK_VALIDATOR_SLASHED_PATH",
+            "SCOUTY_HOOK_VALIDATOR_SLASHED_PATH",
             hook_validator_slashed_path,
         );
     }
 
     if let Some(hook_democracy_started_path) = matches.value_of("hook-democracy-started-path") {
         env::set_var(
-            "SKIPPER_HOOK_DEMOCRACY_STARTED_PATH",
+            "SCOUTY_HOOK_DEMOCRACY_STARTED_PATH",
             hook_democracy_started_path,
         );
     }
 
     if matches.is_present("expose-nominators") {
-        env::set_var("SKIPPER_EXPOSE_NOMINATORS", "true");
+        env::set_var("SCOUTY_EXPOSE_NOMINATORS", "true");
     }
 
     if matches.is_present("disable-matrix") {
-        env::set_var("SKIPPER_MATRIX_DISABLED", "true");
+        env::set_var("SCOUTY_MATRIX_DISABLED", "true");
     }
 
     if matches.is_present("disable-public-matrix-room") {
-        env::set_var("SKIPPER_MATRIX_PUBLIC_ROOM_DISABLED", "true");
+        env::set_var("SCOUTY_MATRIX_PUBLIC_ROOM_DISABLED", "true");
     }
 
     if let Some(matrix_user) = matches.value_of("matrix-user") {
-        env::set_var("SKIPPER_MATRIX_ACCOUNT", matrix_user);
+        env::set_var("SCOUTY_MATRIX_ACCOUNT", matrix_user);
     }
 
     if let Some(matrix_bot_user) = matches.value_of("matrix-bot-user") {
-        env::set_var("SKIPPER_MATRIX_BOT_USER", matrix_bot_user);
+        env::set_var("SCOUTY_MATRIX_BOT_USER", matrix_bot_user);
     }
 
     if let Some(matrix_bot_password) = matches.value_of("matrix-bot-password") {
-        env::set_var("SKIPPER_MATRIX_BOT_PASSWORD", matrix_bot_password);
+        env::set_var("SCOUTY_MATRIX_BOT_PASSWORD", matrix_bot_password);
     }
 
     if let Some(error_interval) = matches.value_of("error-interval") {
-        env::set_var("SKIPPER_ERROR_INTERVAL", error_interval);
+        env::set_var("SCOUTY_ERROR_INTERVAL", error_interval);
     }
 
-    match envy::prefixed("SKIPPER_").from_env::<Config>() {
+    match envy::prefixed("SCOUTY_").from_env::<Config>() {
         Ok(config) => config,
         Err(error) => panic!("Configuration error: {:#?}", error),
     }

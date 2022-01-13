@@ -24,14 +24,14 @@ jobs:
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         env:
-          SKIPPER_CONFIG_FILENAME: .env.example
+          SCOUTY_CONFIG_FILENAME: .env.example
         with:
           command: test
 
       - name: Run cargo build 
         uses: actions-rs/cargo@v1
         env:
-          SKIPPER_CONFIG_FILENAME: .env.example
+          SCOUTY_CONFIG_FILENAME: .env.example
         with:
           command: build
           args: --release
@@ -39,7 +39,7 @@ jobs:
       - name: Generate SHA-256 hash file
         run: |
           cd ./target/release
-          sha256sum skipper > skipper.sha256
+          sha256sum scouty > scouty.sha256
 
       - name: Get Rustc version
         id: get_rustc
@@ -56,28 +56,28 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.get_tag.outputs.tag }}
-          release_name: Skipper ${{ steps.get_tag.outputs.tag }}
+          release_name: Scouty ${{ steps.get_tag.outputs.tag }}
           body: "Note: This release was built using `${{ steps.get_rustc.outputs.rustc }}`"
           draft: true
           prerelease: false
 
-      - name: Upload skipper binary 
+      - name: Upload scouty binary 
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./target/release/skipper
-          asset_name: skipper
+          asset_path: ./target/release/scouty
+          asset_name: scouty
           asset_content_type: application/octet-stream
 
-      - name: Upload skipper sha256
+      - name: Upload scouty sha256
         uses: actions/upload-release-asset@v1.0.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./target/release/skipper.sha256
-          asset_name: skipper.sha256
+          asset_path: ./target/release/scouty.sha256
+          asset_name: scouty.sha256
           asset_content_type: text/plain
           

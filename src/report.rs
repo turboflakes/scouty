@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 use crate::config::CONFIG;
-use crate::errors::SkipperError;
+use crate::errors::ScoutyError;
 use crate::hooks::Hook;
 use log::info;
 use serde::Deserialize;
@@ -34,7 +34,7 @@ pub struct Network {
 }
 
 impl Network {
-    pub async fn load(client: &Client<DefaultConfig>) -> Result<Network, SkipperError> {
+    pub async fn load(client: &Client<DefaultConfig>) -> Result<Network, ScoutyError> {
         let properties = client.properties();
 
         // Get Network name
@@ -191,10 +191,10 @@ impl Report {
 }
 
 impl From<RawDataSession> for Report {
-    /// Converts a Skipper `RawData` into a [`Report`].
+    /// Converts a Scouty `RawData` into a [`Report`].
     fn from(data: RawDataSession) -> Report {
         let mut report = Report::new();
-        // Skipper package
+        // Scouty package
         report.add_raw_text(format!(
             "🤖 <code>{} v{}</code>",
             env!("CARGO_PKG_NAME"),
@@ -249,10 +249,10 @@ impl From<RawDataSession> for Report {
 }
 
 impl From<RawDataDemocracy> for Report {
-    /// Converts a Skipper `RawData` into a [`Report`].
+    /// Converts a Scouty `RawData` into a [`Report`].
     fn from(data: RawDataDemocracy) -> Report {
         let mut report = Report::new();
-        // Skipper package
+        // Scouty package
         report.add_raw_text(format!(
             "🤖 <code>{} v{}</code>",
             env!("CARGO_PKG_NAME"),
@@ -313,10 +313,10 @@ impl From<RawDataDemocracy> for Report {
 }
 
 impl From<RawDataStaking> for Report {
-    /// Converts a Skipper `RawData` into a [`Report`].
+    /// Converts a Scouty `RawData` into a [`Report`].
     fn from(data: RawDataStaking) -> Report {
         let mut report = Report::new();
-        // Skipper package
+        // Scouty package
         report.add_raw_text(format!(
             "🤖 <code>{} v{}</code>",
             env!("CARGO_PKG_NAME"),

@@ -25,19 +25,19 @@ mod hooks;
 mod matrix;
 mod report;
 mod runtimes;
-mod skipper;
+mod scouty;
 
 use crate::config::CONFIG;
-use crate::skipper::Skipper;
+use crate::scouty::Scouty;
 use log::info;
 use std::env;
 
 fn main() {
     let config = CONFIG.clone();
     if config.is_debug {
-        env::set_var("RUST_LOG", "skipper=debug,subxt=debug");
+        env::set_var("RUST_LOG", "scouty=debug,subxt=debug");
     } else {
-        env::set_var("RUST_LOG", "skipper=info");
+        env::set_var("RUST_LOG", "scouty=info");
     }
     env_logger::try_init().unwrap_or_default();
 
@@ -48,5 +48,5 @@ fn main() {
         env!("CARGO_PKG_DESCRIPTION")
     );
 
-    Skipper::subscribe();
+    Scouty::subscribe();
 }

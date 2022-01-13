@@ -24,9 +24,9 @@ use reqwest;
 use std::{str, string, string::String};
 use thiserror::Error;
 
-/// Skipper specific error messages
+/// Scouty specific error messages
 #[derive(Error, Debug)]
-pub enum SkipperError {
+pub enum ScoutyError {
     #[error("Substrate_subxt error: {0}")]
     SubxtError(#[from] subxt::Error),
     #[error("Codec error: {0}")]
@@ -47,10 +47,10 @@ pub enum SkipperError {
     Other(String),
 }
 
-/// Convert &str to SkipperError
-impl From<&str> for SkipperError {
+/// Convert &str to ScoutyError
+impl From<&str> for ScoutyError {
     fn from(error: &str) -> Self {
-        SkipperError::Other(error.into())
+        ScoutyError::Other(error.into())
     }
 }
 
@@ -72,9 +72,9 @@ impl From<MatrixError> for String {
     }
 }
 
-/// Convert MatrixError to SkipperError
-impl From<MatrixError> for SkipperError {
+/// Convert MatrixError to ScoutyError
+impl From<MatrixError> for ScoutyError {
     fn from(error: MatrixError) -> Self {
-        SkipperError::MatrixError(error.into())
+        ScoutyError::MatrixError(error.into())
     }
 }

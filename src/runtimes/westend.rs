@@ -20,7 +20,7 @@
 // SOFTWARE.
 
 use crate::config::CONFIG;
-use crate::errors::SkipperError;
+use crate::errors::ScoutyError;
 use crate::hooks::{
     Hook, HOOK_NEW_ERA, HOOK_NEW_SESSION, HOOK_VALIDATOR_SLASHED,
     HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA, HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA,
@@ -29,7 +29,7 @@ use crate::report::{
     Network, RawDataSession, RawDataStaking, Report, Session, Slash,
     Validator, Validators,
 };
-use crate::skipper::Skipper;
+use crate::scouty::Scouty;
 use async_recursion::async_recursion;
 use codec::{Decode, Encode};
 use log::{debug, info};
@@ -47,9 +47,9 @@ mod api {}
 
 pub type KusamaApi = api::RuntimeApi<DefaultConfig, DefaultExtra<DefaultConfig>>;
 
-pub async fn subscribe_on_chain_events(skipper: &Skipper) -> Result<(), SkipperError> {
+pub async fn subscribe_on_chain_events(scouty: &Scouty) -> Result<(), ScoutyError> {
     info!("Subscribe on-chain finalized events");
-    let client = skipper.client().clone();
+    let client = scouty.client().clone();
     let sub = client.rpc().subscribe_finalized_events().await?;
     let decoder = client.events_decoder();
     let mut sub = EventSubscription::<DefaultConfig>::new(sub, &decoder);
@@ -68,9 +68,9 @@ pub async fn subscribe_on_chain_events(skipper: &Skipper) -> Result<(), SkipperE
                     match api::session::events::NewSession::decode(&mut &data[..]) {
                         Ok(event) => {
                             info!("Successfully decoded event {:?}", event);
-                            try_run_session_hooks(&skipper, event).await?;
+                            try_run_session_hooks(&scouty, event).await?;
                         }
-                        Err(e) => return Err(SkipperError::CodecError(e)),
+                        Err(e) => return Err(ScoutyError::CodecError(e)),
                     }
                 }
                 RawEvent {
@@ -83,9 +83,9 @@ pub async fn subscribe_on_chain_events(skipper: &Skipper) -> Result<(), SkipperE
                     match api::staking::events::Slashed::decode(&mut &data[..]) {
                         Ok(event) => {
                             info!("Successfully decoded event {:?}", event);
-                            try_run_staking_slashed_hook(&skipper, event).await?;
+                            try_run_staking_slashed_hook(&scouty, event).await?;
                         }
-                        Err(e) => return Err(SkipperError::CodecError(e)),
+                        Err(e) => return Err(ScoutyError::CodecError(e)),
                     }
                 }
                 _ => continue,
@@ -93,19 +93,19 @@ pub async fn subscribe_on_chain_events(skipper: &Skipper) -> Result<(), SkipperE
         }
     }
     // If subscription has closed for some reason await and subscribe again
-    Err(SkipperError::SubscriptionFinished)
+    Err(ScoutyError::SubscriptionFinished)
 }
 
 async fn try_run_staking_slashed_hook(
-    skipper: &Skipper,
+    scouty: &Scouty,
     event: api::staking::events::Slashed,
-) -> Result<(), SkipperError> {
-    let client = skipper.client();
+) -> Result<(), ScoutyError> {
+    let client = scouty.client();
     let _api = client.clone().to_runtime_api::<KusamaApi>();
     let config = CONFIG.clone();
 
     // Collect validators info based on config stashes
-    let mut validators = collect_validators_data(&skipper).await?;
+    let mut validators = collect_validators_data(&scouty).await?;
 
     // Try to run hooks for each stash
     for v in validators.iter_mut() {
@@ -142,7 +142,7 @@ async fn try_run_staking_slashed_hook(
     };
 
     let report = Report::from(data);
-    skipper
+    scouty
         .send_message(&report.message(), &report.formatted_message())
         .await?;
 
@@ -150,17 +150,17 @@ async fn try_run_staking_slashed_hook(
 }
 
 async fn try_run_session_hooks(
-    skipper: &Skipper,
+    scouty: &Scouty,
     event: api::session::events::NewSession,
-) -> Result<(), SkipperError> {
-    let client = skipper.client();
+) -> Result<(), ScoutyError> {
+    let client = scouty.client();
     let api = client.clone().to_runtime_api::<KusamaApi>();
     let config = CONFIG.clone();
 
     // Get Era index
     let active_era_index = match api.storage().staking().active_era(None).await? {
         Some(info) => info.index,
-        None => return Err(SkipperError::Other("Active era not available".into())),
+        None => return Err(ScoutyError::Other("Active era not available".into())),
     };
 
     // Get current session
@@ -175,7 +175,7 @@ async fn try_run_session_hooks(
     {
         Some(index) => index,
         None => {
-            return Err(SkipperError::Other(
+            return Err(ScoutyError::Other(
                 "Start session index not available".into(),
             ))
         }
@@ -197,7 +197,7 @@ async fn try_run_session_hooks(
     debug!("session {:?}", session);
 
     // Collect validators info based on config stashes
-    let mut validators = collect_validators_data(&skipper).await?;
+    let mut validators = collect_validators_data(&scouty).await?;
 
     // Try to run hooks for each stash
     for v in validators.iter_mut() {
@@ -214,7 +214,7 @@ async fn try_run_session_hooks(
         ];
 
         if config.expose_nominators {
-            let nominators = get_nominators(&skipper, active_era_index, &v.stash).await?;
+            let nominators = get_nominators(&scouty, active_era_index, &v.stash).await?;
             args.push(nominators.join(","));
         }
 
@@ -291,7 +291,7 @@ async fn try_run_session_hooks(
     };
 
     let report = Report::from(data);
-    skipper
+    scouty
         .send_message(&report.message(), &report.formatted_message())
         .await?;
 
@@ -299,11 +299,11 @@ async fn try_run_session_hooks(
 }
 
 async fn get_nominators(
-    skipper: &Skipper,
+    scouty: &Scouty,
     era_index: u32,
     stash: &AccountId32,
-) -> Result<Vec<String>, SkipperError> {
-    let client = skipper.client().clone();
+) -> Result<Vec<String>, ScoutyError> {
+    let client = scouty.client().clone();
     let api = client.to_runtime_api::<KusamaApi>();
 
     let exposure = api
@@ -320,8 +320,8 @@ async fn get_nominators(
     Ok(nominators)
 }
 
-async fn collect_validators_data(skipper: &Skipper) -> Result<Validators, SkipperError> {
-    let client = skipper.client().clone();
+async fn collect_validators_data(scouty: &Scouty) -> Result<Validators, ScoutyError> {
+    let client = scouty.client().clone();
     let api = client.to_runtime_api::<KusamaApi>();
     let config = CONFIG.clone();
 
@@ -337,7 +337,7 @@ async fn collect_validators_data(skipper: &Skipper) -> Result<Validators, Skippe
         let mut v = Validator::new(stash.clone());
 
         // Get validator name
-        v.name = get_display_name(&skipper, &stash, None).await?;
+        v.name = get_display_name(&scouty, &stash, None).await?;
 
         // Check if validator is in active set
         v.is_active = active_validators.contains(&v.stash);
@@ -360,11 +360,11 @@ async fn collect_validators_data(skipper: &Skipper) -> Result<Validators, Skippe
 
 #[async_recursion]
 async fn get_display_name(
-    skipper: &Skipper,
+    scouty: &Scouty,
     stash: &AccountId32,
     sub_account_name: Option<String>,
-) -> Result<String, SkipperError> {
-    let client = skipper.client();
+) -> Result<String, ScoutyError> {
+    let client = scouty.client();
     let api = client.clone().to_runtime_api::<KusamaApi>();
 
     match api
@@ -391,7 +391,7 @@ async fn get_display_name(
             {
                 let sub_account_name = parse_identity_data(data);
                 return get_display_name(
-                    &skipper,
+                    &scouty,
                     &parent_account,
                     Some(sub_account_name.to_string()),
                 )

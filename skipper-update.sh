@@ -22,21 +22,21 @@
 #!/bin/bash
 #
 # > make a file executable
-# chmod +x ./skipper-update.sh
+# chmod +x ./scouty-update.sh
 
-DIRNAME="/opt/skipper-cli"
-FILENAME="$DIRNAME/skipper"
+DIRNAME="/opt/scouty-cli"
+FILENAME="$DIRNAME/scouty"
 
-read -p "Enter the Skipper version that you would like to download (e.g.: 0.1.1): " INPUT_VERSION
+read -p "Enter the Scouty version that you would like to download (e.g.: 0.1.1): " INPUT_VERSION
 if [ "$INPUT_VERSION" = "" ]; then
                     INPUT_VERSION="0.1.1"
 fi
 
-URI="https://github.com/turboflakes/skipper/releases/download/v$INPUT_VERSION/skipper"
-URI_SHA256="https://github.com/turboflakes/skipper/releases/download/v$INPUT_VERSION/skipper.sha256"
+URI="https://github.com/turboflakes/scouty/releases/download/v$INPUT_VERSION/scouty"
+URI_SHA256="https://github.com/turboflakes/scouty/releases/download/v$INPUT_VERSION/scouty.sha256"
 wget $URI && wget $URI_SHA256
 
-if sha256sum -c skipper.sha256 2>&1 | grep -q 'OK'
+if sha256sum -c scouty.sha256 2>&1 | grep -q 'OK'
 then
         if [ ! -d "$DIRNAME" ]
         then
@@ -46,10 +46,10 @@ then
         then
                 mv "$FILENAME" "$FILENAME.backup"
         fi
-        rm skipper.sha256
-        chmod +x skipper
-        mv skipper "$FILENAME"
-        echo "** skipper v$INPUT_VERSION successfully downloaded and verified $FILENAME **"
+        rm scouty.sha256
+        chmod +x scouty
+        mv scouty "$FILENAME"
+        echo "** scouty v$INPUT_VERSION successfully downloaded and verified $FILENAME **"
 else
         echo "Error: SHA256 doesn't match!"
         rm "$FILENAME*"
