@@ -21,6 +21,7 @@
 
 mod config;
 mod errors;
+mod hooks;
 mod matrix;
 mod report;
 mod runtimes;

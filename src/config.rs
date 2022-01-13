@@ -68,9 +68,19 @@ pub struct Config {
     #[serde(default)]
     pub hook_new_session_path: String,
     #[serde(default)]
-    pub hook_active_next_era_path: String,
+    pub hook_new_era_path: String,
     #[serde(default)]
-    pub hook_inactive_next_era_path: String,
+    pub hook_validator_starts_active_next_era_path: String,
+    #[serde(default)]
+    pub hook_validator_starts_inactive_next_era_path: String,
+    #[serde(default)]
+    pub hook_validator_chilled_path: String,
+    #[serde(default)]
+    pub hook_validator_slashed_path: String,
+    #[serde(default)]
+    pub hook_validator_offline_path: String,
+    #[serde(default)]
+    pub hook_democracy_started_path: String,
     // matrix configuration
     #[serde(default)]
     pub matrix_user: String,
@@ -82,6 +92,9 @@ pub struct Config {
     pub matrix_disabled: bool,
     #[serde(default)]
     pub matrix_bot_display_name_disabled: bool,
+    // chain settings exposure
+    #[serde(default)]
+    pub expose_nominators: bool,
 }
 
 /// Inject dotenv and env vars into the Config struct
@@ -179,6 +192,13 @@ fn get_config() -> Config {
         ),
     )
     .arg(
+      Arg::with_name("expose-nominators")
+        .long("expose-nominators")
+        .help(
+          "Expose the nominators stashes as a new positional argument in hooks. For each validator stash defined `skipper` will look for which nominators are currently backing it.",
+        ),
+      )
+    .arg(
       Arg::with_name("hook-new-session-path")
         .long("hook-new-session-path")
         .takes_value(true)
@@ -188,21 +208,39 @@ fn get_config() -> Config {
         ),
     )
     .arg(
-      Arg::with_name("hook-active-next-era-path")
-        .long("hook-active-next-era-path")
+      Arg::with_name("hook-new-era-path")
+        .long("hook-new-era-path")
         .takes_value(true)
         .value_name("FILE")
         .help(
-          "Sets the path for the script that is called on the last session of an era, if the stash is NOT ACTIVE and keys are queued for the next Session/Era.",
+          "Sets the path for the script that is called every new era.",
         ),
     )
     .arg(
-      Arg::with_name("hook-inactive-next-era-path")
-        .long("hook-inactive-next-era-path")
+      Arg::with_name("hook-validator-starts-active-next-era-path")
+        .long("hook-validator-starts-active-next-era-path")
         .takes_value(true)
         .value_name("FILE")
         .help(
-          "Sets the path for the script that is called on the last session of an era, if the stash is active and keys are NOT QUEUED for the next Session/Era.",
+          "Sets the path for the script that is called on the last session of an era, if the stash is NOT ACTIVE and keys are QUEUED for the next Session/Era.",
+        ),
+    )
+    .arg(
+      Arg::with_name("hook-validator-starts-inactive-next-era-path")
+        .long("hook-validator-starts-inactive-next-era-path")
+        .takes_value(true)
+        .value_name("FILE")
+        .help(
+          "Sets the path for the script that is called on the last session of an era, if the stash is ACTIVE and keys are NOT QUEUED for the next Session/Era.",
+        ),
+    )
+    .arg(
+      Arg::with_name("hook-validator-slashed-path")
+        .long("hook-validator-slashed-path")
+        .takes_value(true)
+        .value_name("FILE")
+        .help(
+          "Sets the path for the script that is called every time a Slash occurred on the network.",
         ),
     )
     .get_matches();
@@ -257,18 +295,44 @@ fn get_config() -> Config {
         env::set_var("SKIPPER_HOOK_NEW_SESSION_PATH", hook_new_session_path);
     }
 
-    if let Some(hook_active_next_era_path) = matches.value_of("hook-active-next-era-path") {
+    if let Some(hook_new_era_path) = matches.value_of("hook-new-era-path") {
+        env::set_var("SKIPPER_HOOK_NEW_ERA_PATH", hook_new_era_path);
+    }
+
+    if let Some(hook_validator_starts_active_next_era_path) =
+        matches.value_of("hook-validator-starts-active-next-era-path")
+    {
         env::set_var(
-            "SKIPPER_HOOK_ACTIVE_NEXT_ERA_PATH",
-            hook_active_next_era_path,
+            "SKIPPER_HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA_PATH",
+            hook_validator_starts_active_next_era_path,
         );
     }
 
-    if let Some(hook_inactive_next_era_path) = matches.value_of("hook-inactive-next-era-path") {
+    if let Some(hook_validator_starts_inactive_next_era_path) =
+        matches.value_of("hook-validator-starts-inactive-next-era-path")
+    {
         env::set_var(
-            "SKIPPER_HOOK_INACTIVE_NEXT_ERA_PATH",
-            hook_inactive_next_era_path,
+            "SKIPPER_HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA_PATH",
+            hook_validator_starts_inactive_next_era_path,
         );
+    }
+
+    if let Some(hook_validator_slashed_path) = matches.value_of("hook-validator-slashed-path") {
+        env::set_var(
+            "SKIPPER_HOOK_VALIDATOR_SLASHED_PATH",
+            hook_validator_slashed_path,
+        );
+    }
+
+    if let Some(hook_democracy_started_path) = matches.value_of("hook-democracy-started-path") {
+        env::set_var(
+            "SKIPPER_HOOK_DEMOCRACY_STARTED_PATH",
+            hook_democracy_started_path,
+        );
+    }
+
+    if matches.is_present("expose-nominators") {
+        env::set_var("SKIPPER_EXPOSE_NOMINATORS", "true");
     }
 
     if matches.is_present("disable-matrix") {

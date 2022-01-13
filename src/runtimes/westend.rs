@@ -21,18 +21,22 @@
 
 use crate::config::CONFIG;
 use crate::errors::SkipperError;
-use crate::report::{Hook, Network, RawData, Report, Validator, Validators};
-use crate::skipper::{
-    try_call_hook, verify_hook, Skipper, HOOK_ACTIVE_NEXT_ERA, HOOK_INACTIVE_NEXT_ERA,
-    HOOK_NEW_SESSION,
+use crate::hooks::{
+    Hook, HOOK_NEW_ERA, HOOK_NEW_SESSION, HOOK_VALIDATOR_SLASHED,
+    HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA, HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA,
 };
+use crate::report::{
+    Network, RawDataSession, RawDataStaking, Report, Session, Slash,
+    Validator, Validators,
+};
+use crate::skipper::Skipper;
 use async_recursion::async_recursion;
 use codec::{Decode, Encode};
 use log::{debug, info};
 use std::{result::Result, str::FromStr};
 use subxt::{
     sp_core::hexdisplay::HexDisplay, sp_runtime::AccountId32, DefaultConfig, DefaultExtra,
-    EventSubscription,
+    EventSubscription, RawEvent,
 };
 
 #[subxt::subxt(
@@ -41,25 +45,50 @@ use subxt::{
 )]
 mod api {}
 
-pub type WestendApi = api::RuntimeApi<DefaultConfig, DefaultExtra<DefaultConfig>>;
+pub type KusamaApi = api::RuntimeApi<DefaultConfig, DefaultExtra<DefaultConfig>>;
 
-pub async fn run_and_subscribe_new_session_events(skipper: &Skipper) -> Result<(), SkipperError> {
-    info!("Check Validator on-chain status");
-    try_run_hooks(&skipper).await?;
-    info!("Subscribe 'NewSession' on-chain finalized event");
+pub async fn subscribe_on_chain_events(skipper: &Skipper) -> Result<(), SkipperError> {
+    info!("Subscribe on-chain finalized events");
     let client = skipper.client().clone();
     let sub = client.rpc().subscribe_finalized_events().await?;
     let decoder = client.events_decoder();
     let mut sub = EventSubscription::<DefaultConfig>::new(sub, &decoder);
-    sub.filter_event::<api::session::events::NewSession>();
+    // TODO: perhaps we can have a filtered events Vec inside subxt
+    // sub.filter_event::<api::session::events::NewSession>();
     while let Some(result) = sub.next().await {
         if let Ok(raw) = result {
-            match api::session::events::NewSession::decode(&mut &raw.data[..]) {
-                Ok(event) => {
-                    info!("Successfully decoded event {:?}", event);
-                    try_run_hooks(&skipper).await?;
+            match raw {
+                RawEvent {
+                    ref pallet,
+                    ref variant,
+                    data,
+                    ..
+                } if pallet == "Session" && variant == "NewSession" => {
+                    // https://polkadot.js.org/docs/substrate/events#newsessionu32
+                    match api::session::events::NewSession::decode(&mut &data[..]) {
+                        Ok(event) => {
+                            info!("Successfully decoded event {:?}", event);
+                            try_run_session_hooks(&skipper, event).await?;
+                        }
+                        Err(e) => return Err(SkipperError::CodecError(e)),
+                    }
                 }
-                Err(e) => return Err(SkipperError::CodecError(e)),
+                RawEvent {
+                    ref pallet,
+                    ref variant,
+                    data,
+                    ..
+                } if pallet == "Staking" && variant == "Slashed" => {
+                    // https://polkadot.js.org/docs/substrate/events#slashedaccountid32-u128-2
+                    match api::staking::events::Slashed::decode(&mut &data[..]) {
+                        Ok(event) => {
+                            info!("Successfully decoded event {:?}", event);
+                            try_run_staking_slashed_hook(&skipper, event).await?;
+                        }
+                        Err(e) => return Err(SkipperError::CodecError(e)),
+                    }
+                }
+                _ => continue,
             }
         }
     }
@@ -67,18 +96,66 @@ pub async fn run_and_subscribe_new_session_events(skipper: &Skipper) -> Result<(
     Err(SkipperError::SubscriptionFinished)
 }
 
-async fn try_run_hooks(skipper: &Skipper) -> Result<(), SkipperError> {
+async fn try_run_staking_slashed_hook(
+    skipper: &Skipper,
+    event: api::staking::events::Slashed,
+) -> Result<(), SkipperError> {
     let client = skipper.client();
-    let api = client.clone().to_runtime_api::<WestendApi>();
+    let _api = client.clone().to_runtime_api::<KusamaApi>();
     let config = CONFIG.clone();
 
-    // check hook paths
-    verify_hook(HOOK_NEW_SESSION, &config.hook_new_session_path);
-    verify_hook(HOOK_ACTIVE_NEXT_ERA, &config.hook_active_next_era_path);
-    verify_hook(HOOK_INACTIVE_NEXT_ERA, &config.hook_inactive_next_era_path);
+    // Collect validators info based on config stashes
+    let mut validators = collect_validators_data(&skipper).await?;
 
-    // Get Network name
-    let chain_name = client.rpc().system_chain().await?;
+    // Try to run hooks for each stash
+    for v in validators.iter_mut() {
+        if event.0 == v.stash {
+            // Set validator slashed amount
+            v.is_slashed = true;
+        }
+    }
+
+    debug!("validators {:?}", validators);
+
+    // Try run hook
+    let hook = Hook::try_run(
+        HOOK_VALIDATOR_SLASHED,
+        &config.hook_validator_slashed_path,
+        vec![event.0.to_string(), event.1.to_string()],
+    )?;
+
+    // Set slash info
+    let slash = Slash {
+        who: event.0,
+        amount_value: event.1,
+        hook: hook,
+    };
+
+    let network = Network::load(&client).await?;
+    debug!("network {:?}", network);
+
+    // Prepare notification report
+    let data = RawDataStaking {
+        network,
+        validators,
+        slash,
+    };
+
+    let report = Report::from(data);
+    skipper
+        .send_message(&report.message(), &report.formatted_message())
+        .await?;
+
+    Ok(())
+}
+
+async fn try_run_session_hooks(
+    skipper: &Skipper,
+    event: api::session::events::NewSession,
+) -> Result<(), SkipperError> {
+    let client = skipper.client();
+    let api = client.clone().to_runtime_api::<KusamaApi>();
+    let config = CONFIG.clone();
 
     // Get Era index
     let active_era_index = match api.storage().staking().active_era(None).await? {
@@ -87,7 +164,7 @@ async fn try_run_hooks(skipper: &Skipper) -> Result<(), SkipperError> {
     };
 
     // Get current session
-    let current_session_index = api.storage().session().current_index(None).await?;
+    let current_session_index = event.session_index;
 
     // Get start session index
     let start_session_index = match api
@@ -111,14 +188,13 @@ async fn try_run_hooks(skipper: &Skipper) -> Result<(), SkipperError> {
     let queued_session_keys_changed = api.storage().session().queued_changed(None).await?;
 
     // Set network info
-    let network = Network {
-        name: chain_name,
+    let session = Session {
         active_era_index: active_era_index,
         current_session_index: current_session_index,
         eras_session_index: eras_session_index,
         queued_session_keys_changed: queued_session_keys_changed,
     };
-    debug!("network {:?}", network);
+    debug!("session {:?}", session);
 
     // Collect validators info based on config stashes
     let mut validators = collect_validators_data(&skipper).await?;
@@ -126,75 +202,77 @@ async fn try_run_hooks(skipper: &Skipper) -> Result<(), SkipperError> {
     // Try to run hooks for each stash
     for v in validators.iter_mut() {
         // Try HOOK_NEW_SESSION
-        let stdout = try_call_hook(
+        let mut args = vec![
+            v.stash.to_string(),
+            v.name.to_string(),
+            format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
+            v.is_active.to_string(),
+            v.is_queued.to_string(),
+            active_era_index.to_string(),
+            current_session_index.to_string(),
+            eras_session_index.to_string(),
+        ];
+
+        if config.expose_nominators {
+            let nominators = get_nominators(&skipper, active_era_index, &v.stash).await?;
+            args.push(nominators.join(","));
+        }
+
+        // Try run hook
+        let hook = Hook::try_run(
             HOOK_NEW_SESSION,
             &config.hook_new_session_path,
-            vec![
-                v.stash.to_string(),
-                v.name.to_string(),
-                format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
-                v.is_active.to_string(),
-                v.is_queued.to_string(),
-                active_era_index.to_string(),
-                current_session_index.to_string(),
-                eras_session_index.to_string(),
-            ],
+            args.clone(),
         )?;
-
-        let hook = Hook {
-            name: HOOK_NEW_SESSION.to_string(),
-            filename: config.hook_new_session_path.to_string(),
-            stdout: stdout,
-        };
         v.hooks.push(hook);
+
+        // Try HOOK_NEW_ERA
+        if (eras_session_index) == 1 {
+            // Try run hook
+            let hook = Hook::try_run(HOOK_NEW_ERA, &config.hook_new_era_path, args.clone())?;
+            v.hooks.push(hook);
+        }
 
         if (eras_session_index) == 6 && queued_session_keys_changed {
             let next_era_index = active_era_index + 1;
             let next_session_index = current_session_index + 1;
+            let args = vec![
+                v.stash.to_string(),
+                v.name.to_string(),
+                format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
+                format!("{}", next_era_index),
+                format!("{}", next_session_index),
+            ];
 
-            // Try HOOK_ACTIVE_NEXT_ERA
+            // Try HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA
             // If stash is not active and keys are queued for next Era -> trigger hook to get ready and warm up
             if !v.is_active && v.is_queued {
-                let stdout = try_call_hook(
-                    HOOK_ACTIVE_NEXT_ERA,
-                    &config.hook_active_next_era_path,
-                    vec![
-                        v.stash.to_string(),
-                        v.name.to_string(),
-                        format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
-                        format!("{}", next_era_index),
-                        format!("{}", next_session_index),
-                    ],
+                // Try run hook
+                let hook = Hook::try_run(
+                    HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA,
+                    &config.hook_validator_starts_active_next_era_path,
+                    args.clone(),
                 )?;
-
-                let hook = Hook {
-                    name: HOOK_ACTIVE_NEXT_ERA.to_string(),
-                    filename: config.hook_active_next_era_path.to_string(),
-                    stdout: stdout,
-                };
                 v.hooks.push(hook);
             }
 
-            // Try HOOK_INACTIVE_NEXT_ERA
+            // Try HOOK_VALIDATOR_INACTIVE_NEXT_ERA
             // If stash is active and keys are not queued for next Era trigger hook to inform operator
             if v.is_active && !v.is_queued {
-                let stdout = try_call_hook(
-                    HOOK_INACTIVE_NEXT_ERA,
-                    &config.hook_inactive_next_era_path,
-                    vec![
-                        v.stash.to_string(),
-                        v.name.to_string(),
-                        format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
-                        format!("{}", next_era_index),
-                        format!("{}", next_session_index),
-                    ],
-                )?;
+                let args = vec![
+                    v.stash.to_string(),
+                    v.name.to_string(),
+                    format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
+                    format!("{}", next_era_index),
+                    format!("{}", next_session_index),
+                ];
 
-                let hook = Hook {
-                    name: HOOK_INACTIVE_NEXT_ERA.to_string(),
-                    filename: config.hook_inactive_next_era_path.to_string(),
-                    stdout: stdout,
-                };
+                // Try run hook
+                let hook = Hook::try_run(
+                    HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA,
+                    &config.hook_validator_starts_inactive_next_era_path,
+                    args.clone(),
+                )?;
                 v.hooks.push(hook);
             }
         }
@@ -203,8 +281,12 @@ async fn try_run_hooks(skipper: &Skipper) -> Result<(), SkipperError> {
     // Prepare notification report
     debug!("validators {:?}", validators);
 
-    let data = RawData {
+    let network = Network::load(client).await?;
+    debug!("network {:?}", network);
+
+    let data = RawDataSession {
         network,
+        session,
         validators,
     };
 
@@ -216,9 +298,31 @@ async fn try_run_hooks(skipper: &Skipper) -> Result<(), SkipperError> {
     Ok(())
 }
 
+async fn get_nominators(
+    skipper: &Skipper,
+    era_index: u32,
+    stash: &AccountId32,
+) -> Result<Vec<String>, SkipperError> {
+    let client = skipper.client().clone();
+    let api = client.to_runtime_api::<KusamaApi>();
+
+    let exposure = api
+        .storage()
+        .staking()
+        .eras_stakers(era_index, stash.clone(), None)
+        .await?;
+
+    let mut nominators: Vec<String> = vec![];
+    for other in exposure.others {
+        nominators.push(other.who.to_string());
+    }
+
+    Ok(nominators)
+}
+
 async fn collect_validators_data(skipper: &Skipper) -> Result<Validators, SkipperError> {
     let client = skipper.client().clone();
-    let api = client.to_runtime_api::<WestendApi>();
+    let api = client.to_runtime_api::<KusamaApi>();
     let config = CONFIG.clone();
 
     // Verify session active validators
@@ -261,7 +365,7 @@ async fn get_display_name(
     sub_account_name: Option<String>,
 ) -> Result<String, SkipperError> {
     let client = skipper.client();
-    let api = client.clone().to_runtime_api::<WestendApi>();
+    let api = client.clone().to_runtime_api::<KusamaApi>();
 
     match api
         .storage()

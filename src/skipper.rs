@@ -21,6 +21,11 @@
 
 use crate::config::{Config, CONFIG};
 use crate::errors::SkipperError;
+use crate::hooks::{
+    Hook, HOOK_DEMOCRACY_STARTED, HOOK_NEW_ERA, HOOK_NEW_SESSION, HOOK_VALIDATOR_CHILLED,
+    HOOK_VALIDATOR_OFFLINE, HOOK_VALIDATOR_SLASHED, HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA,
+    HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA,
+};
 use crate::matrix::Matrix;
 use crate::runtimes::{
     kusama, polkadot,
@@ -30,9 +35,7 @@ use crate::runtimes::{
 
 use async_std::task;
 use log::{error, info, warn};
-use std::io::{BufRead, BufReader};
-use std::path::Path;
-use std::{convert::TryInto, process::Command, process::Stdio, result::Result, thread, time};
+use std::{convert::TryInto, result::Result, thread, time};
 use subxt::{sp_core::crypto, Client, ClientBuilder, DefaultConfig};
 
 pub async fn create_substrate_node_client(
@@ -144,13 +147,29 @@ impl Skipper {
         spawn_and_restart_subscription_on_error();
     }
 
-    async fn run_and_subscribe_new_session_events(&self) -> Result<(), SkipperError> {
+    async fn subscribe_on_chain_events(&self) -> Result<(), SkipperError> {
+        let config = CONFIG.clone();
+
+        // Verify if hooks scripts are available
+        Hook::exists(HOOK_NEW_SESSION, &config.hook_new_session_path);
+        Hook::exists(HOOK_NEW_ERA, &config.hook_new_era_path);
+        Hook::exists(
+            HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA,
+            &config.hook_validator_starts_active_next_era_path,
+        );
+        Hook::exists(
+            HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA,
+            &config.hook_validator_starts_inactive_next_era_path,
+        );
+        Hook::exists(HOOK_VALIDATOR_SLASHED, &config.hook_validator_slashed_path);
+        Hook::exists(HOOK_VALIDATOR_CHILLED, &config.hook_validator_chilled_path);
+        Hook::exists(HOOK_VALIDATOR_OFFLINE, &config.hook_validator_offline_path);
+        Hook::exists(HOOK_DEMOCRACY_STARTED, &config.hook_democracy_started_path);
+
         match self.runtime {
-            SupportedRuntime::Polkadot => {
-                polkadot::run_and_subscribe_new_session_events(self).await
-            }
-            SupportedRuntime::Kusama => kusama::run_and_subscribe_new_session_events(self).await,
-            SupportedRuntime::Westend => westend::run_and_subscribe_new_session_events(self).await,
+            SupportedRuntime::Polkadot => polkadot::subscribe_on_chain_events(self).await,
+            SupportedRuntime::Kusama => kusama::subscribe_on_chain_events(self).await,
+            SupportedRuntime::Westend => westend::subscribe_on_chain_events(self).await,
         }
     }
 }
@@ -160,7 +179,7 @@ fn spawn_and_restart_subscription_on_error() {
         let config = CONFIG.clone();
         loop {
             let c: Skipper = Skipper::new().await;
-            if let Err(e) = c.run_and_subscribe_new_session_events().await {
+            if let Err(e) = c.subscribe_on_chain_events().await {
                 match e {
                     SkipperError::SubscriptionFinished => warn!("{}", e),
                     SkipperError::MatrixError(_) => warn!("Matrix message skipped!"),
@@ -178,52 +197,4 @@ fn spawn_and_restart_subscription_on_error() {
         }
     });
     task::block_on(t);
-}
-
-pub const HOOK_NEW_SESSION: &'static str = "New session";
-pub const HOOK_ACTIVE_NEXT_ERA: &'static str = "Active next era";
-pub const HOOK_INACTIVE_NEXT_ERA: &'static str = "Inactive next era";
-
-pub fn verify_hook(name: &str, filename: &str) {
-    if !Path::new(filename).exists() {
-        warn!("Hook script file * {} * not defined", name);
-    }
-}
-
-pub fn try_call_hook(
-    name: &str,
-    filename: &str,
-    args: Vec<String>,
-) -> Result<Vec<u8>, SkipperError> {
-    if Path::new(filename).exists() {
-        info!("Run: {} {}", filename, args.join(" "));
-
-        let stdout = Command::new(filename)
-            .args(args)
-            .stdout(Stdio::piped())
-            .spawn()?
-            .stdout
-            .ok_or_else(|| {
-                SkipperError::Other(format!(
-                    "Hook script {} ({}) executed with error",
-                    name, filename
-                ))
-            })?;
-
-        let mut output: Vec<u8> = Vec::new();
-
-        let reader = BufReader::new(stdout);
-
-        reader
-            .lines()
-            .filter_map(|line| line.ok())
-            .for_each(|line| {
-                info!("$ {}", line);
-                output.extend(format!("{}\n", line).as_bytes().to_vec());
-            });
-
-        return Ok(output);
-    }
-
-    Ok(Vec::new())
 }

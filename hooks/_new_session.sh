@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # > make a file executable
-# chmod +x ./new_session.sh
+# chmod +x ./_new_session.sh
 #
 # > positional arguments:
 # 1st - Stash
@@ -11,7 +11,10 @@
 # 5th - Session keys queued? (true/false)
 # 6th - Era
 # 7th - Session
-# 8th - Era session index
+# 8th - Eras session index [1,2,3,4,5,6]
+#
+# The following arguments depend on exposed flags
+# 9th - Nominator stashes [stash_1, stash_2, ..]
 #
 # > Special character '!' controls message visibility on Matrix (Element)
 # Any message that starts with '!' will be sent to Matrix, to the user private room
