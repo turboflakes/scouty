@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # > make a file executable
-# chmod +x ./_validator_chilled.sh
+# chmod +x ./_validator_offline.sh
 #
 # > positional arguments:
 # 1st - Stash

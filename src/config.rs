@@ -243,6 +243,24 @@ fn get_config() -> Config {
           "Sets the path for the script that is called every time a Slash occurred on the network.",
         ),
     )
+    .arg(
+      Arg::with_name("hook-validator-chilled-path")
+        .long("hook-validator-chilled-path")
+        .takes_value(true)
+        .value_name("FILE")
+        .help(
+          "Sets the path for the script that is called every time one of the Validator stashes defined is chilled.",
+        ),
+    )
+    .arg(
+      Arg::with_name("hook-validator-offline-path")
+        .long("hook-validator-offline-path")
+        .takes_value(true)
+        .value_name("FILE")
+        .help(
+          "Sets the path for the script that is called every time one of the Validator stashes defined is offline at the end of a session.",
+        ),
+    )
     .get_matches();
 
     // Try to load configuration from file first
@@ -321,6 +339,20 @@ fn get_config() -> Config {
         env::set_var(
             "SCOUTY_HOOK_VALIDATOR_SLASHED_PATH",
             hook_validator_slashed_path,
+        );
+    }
+
+    if let Some(hook_validator_chilled_path) = matches.value_of("hook-validator-chilled-path") {
+        env::set_var(
+            "SCOUTY_HOOK_VALIDATOR_CHILLED_PATH",
+            hook_validator_chilled_path,
+        );
+    }
+
+    if let Some(hook_validator_offline_path) = matches.value_of("hook-validator-offline-path") {
+        env::set_var(
+            "SCOUTY_HOOK_VALIDATOR_OFFLINE_PATH",
+            hook_validator_offline_path,
         );
     }
 

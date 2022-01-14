@@ -22,12 +22,12 @@
 use crate::config::CONFIG;
 use crate::errors::ScoutyError;
 use crate::hooks::{
-    Hook, HOOK_DEMOCRACY_STARTED, HOOK_NEW_ERA, HOOK_NEW_SESSION, HOOK_VALIDATOR_SLASHED,
-    HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA, HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA,
+    Hook, HOOK_DEMOCRACY_STARTED, HOOK_NEW_ERA, HOOK_NEW_SESSION, HOOK_VALIDATOR_CHILLED,
+    HOOK_VALIDATOR_OFFLINE, HOOK_VALIDATOR_SLASHED, HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA,
+    HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA,
 };
 use crate::report::{
-    Network, RawDataDemocracy, RawDataSession, RawDataStaking, Referendum, Report, Session, Slash,
-    Validator, Validators,
+    Network, RawData, Referendum, Report, Section, Session, Slash, Validator, Validators,
 };
 use crate::scouty::Scouty;
 use async_recursion::async_recursion;
@@ -45,7 +45,7 @@ use subxt::{
 )]
 mod api {}
 
-pub type KusamaApi = api::RuntimeApi<DefaultConfig, DefaultExtra<DefaultConfig>>;
+pub type PolkadotApi = api::RuntimeApi<DefaultConfig, DefaultExtra<DefaultConfig>>;
 
 pub async fn subscribe_on_chain_events(scouty: &Scouty) -> Result<(), ScoutyError> {
     info!("Subscribe on-chain finalized events");
@@ -71,7 +71,7 @@ pub async fn subscribe_on_chain_events(scouty: &Scouty) -> Result<(), ScoutyErro
                             try_run_session_hooks(&scouty, event).await?;
                         }
                         Err(e) => return Err(ScoutyError::CodecError(e)),
-                    }
+                    };
                 }
                 RawEvent {
                     ref pallet,
@@ -86,7 +86,37 @@ pub async fn subscribe_on_chain_events(scouty: &Scouty) -> Result<(), ScoutyErro
                             try_run_staking_slashed_hook(&scouty, event).await?;
                         }
                         Err(e) => return Err(ScoutyError::CodecError(e)),
-                    }
+                    };
+                }
+                RawEvent {
+                    ref pallet,
+                    ref variant,
+                    data,
+                    ..
+                } if pallet == "Staking" && variant == "Chilled" => {
+                    // https://polkadot.js.org/docs/substrate/events#chilledaccountid32
+                    match api::staking::events::Chilled::decode(&mut &data[..]) {
+                        Ok(event) => {
+                            info!("Successfully decoded event {:?}", event);
+                            try_run_staking_chilled_hook(&scouty, event).await?;
+                        }
+                        Err(e) => return Err(ScoutyError::CodecError(e)),
+                    };
+                }
+                RawEvent {
+                    ref pallet,
+                    ref variant,
+                    data,
+                    ..
+                } if pallet == "ImOnline" && variant == "SomeOffline" => {
+                    // https://polkadot.js.org/docs/substrate/events#someofflinevecaccountid32palletstakingexposure
+                    match api::im_online::events::SomeOffline::decode(&mut &data[..]) {
+                        Ok(event) => {
+                            info!("Successfully decoded event {:?}", event);
+                            try_run_im_online_some_offline_hook(&scouty, event).await?;
+                        }
+                        Err(e) => return Err(ScoutyError::CodecError(e)),
+                    };
                 }
                 RawEvent {
                     ref pallet,
@@ -101,9 +131,9 @@ pub async fn subscribe_on_chain_events(scouty: &Scouty) -> Result<(), ScoutyErro
                             try_run_democracy_started_hook(&scouty, event).await?;
                         }
                         Err(e) => return Err(ScoutyError::CodecError(e)),
-                    }
+                    };
                 }
-                _ => continue,
+                _ => (),
             }
         }
     }
@@ -111,12 +141,140 @@ pub async fn subscribe_on_chain_events(scouty: &Scouty) -> Result<(), ScoutyErro
     Err(ScoutyError::SubscriptionFinished)
 }
 
+async fn try_run_staking_chilled_hook(
+    scouty: &Scouty,
+    event: api::staking::events::Chilled,
+) -> Result<(), ScoutyError> {
+    let client = scouty.client();
+    let _api = client.clone().to_runtime_api::<PolkadotApi>();
+    let config = CONFIG.clone();
+
+    // Collect validators info based on config stashes
+    let mut validators = collect_validators_data(&scouty).await?;
+
+    // Try to run hooks for each stash
+
+    for v in validators.iter_mut() {
+        // Identify if the stash has been chilled
+        if event.0 == v.stash {
+            v.is_chilled = true;
+
+            // Try HOOK_VALIDATOR_CHILLED
+            let args = vec![
+                v.stash.to_string(),
+                v.name.to_string(),
+                format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
+                v.is_active.to_string(),
+                v.is_queued.to_string(),
+            ];
+
+            // Try run hook
+            let hook = Hook::try_run(
+                HOOK_VALIDATOR_CHILLED,
+                &config.hook_validator_chilled_path,
+                args.clone(),
+            )?;
+            v.hooks.push(hook);
+            break;
+        }
+    }
+
+    debug!("validators {:?}", validators);
+
+    // NOTE: Only send chilled message if the chilled account is
+    // one of the stashes defined in config
+    if validators.iter().any(|v| v.is_chilled) {
+        let network = Network::load(&client).await?;
+        debug!("network {:?}", network);
+
+        // Prepare notification report
+        let data = RawData {
+            network,
+            validators,
+            section: Section::Chill,
+            ..Default::default()
+        };
+
+        let report = Report::from(data);
+        scouty
+            .send_message(&report.message(), &report.formatted_message())
+            .await?;
+    }
+
+    Ok(())
+}
+
+async fn try_run_im_online_some_offline_hook(
+    scouty: &Scouty,
+    event: api::im_online::events::SomeOffline,
+) -> Result<(), ScoutyError> {
+    let client = scouty.client();
+    let _api = client.clone().to_runtime_api::<PolkadotApi>();
+    let config = CONFIG.clone();
+
+    // Collect validators info based on config stashes
+    let mut validators = collect_validators_data(&scouty).await?;
+
+    // Try to run hooks for each stash
+
+    for v in validators.iter_mut() {
+        for (account_id, _exposure) in event.offline.iter() {
+            if account_id == &v.stash {
+                v.is_offline = true;
+                break;
+            }
+        }
+
+        // Try HOOK_VALIDATOR_OFFLINE
+        let args = vec![
+            v.stash.to_string(),
+            v.name.to_string(),
+            format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
+            v.is_active.to_string(),
+            v.is_queued.to_string(),
+        ];
+
+        // Try run hook
+        let hook = Hook::try_run(
+            HOOK_VALIDATOR_OFFLINE,
+            &config.hook_validator_offline_path,
+            args.clone(),
+        )?;
+        v.hooks.push(hook);
+        break;
+    }
+
+    debug!("validators {:?}", validators);
+
+    // NOTE: Only send offline message if the offline account is
+    // one of the stashes defined in config
+    // if validators.iter().any(|v| v.is_offline) {
+    let network = Network::load(&client).await?;
+    debug!("network {:?}", network);
+
+    // Prepare notification report
+    let data = RawData {
+        network,
+        validators,
+        section: Section::Offline,
+        ..Default::default()
+    };
+
+    let report = Report::from(data);
+    scouty
+        .send_message(&report.message(), &report.formatted_message())
+        .await?;
+    // }
+
+    Ok(())
+}
+
 async fn try_run_staking_slashed_hook(
     scouty: &Scouty,
     event: api::staking::events::Slashed,
 ) -> Result<(), ScoutyError> {
     let client = scouty.client();
-    let _api = client.clone().to_runtime_api::<KusamaApi>();
+    let _api = client.clone().to_runtime_api::<PolkadotApi>();
     let config = CONFIG.clone();
 
     // Collect validators info based on config stashes
@@ -125,7 +283,6 @@ async fn try_run_staking_slashed_hook(
     // Try to run hooks for each stash
     for v in validators.iter_mut() {
         if event.0 == v.stash {
-            // Set validator slashed amount
             v.is_slashed = true;
         }
     }
@@ -150,10 +307,12 @@ async fn try_run_staking_slashed_hook(
     debug!("network {:?}", network);
 
     // Prepare notification report
-    let data = RawDataStaking {
+    let data = RawData {
         network,
         validators,
         slash,
+        section: Section::Slash,
+        ..Default::default()
     };
 
     let report = Report::from(data);
@@ -169,7 +328,7 @@ async fn try_run_democracy_started_hook(
     event: api::democracy::events::Started,
 ) -> Result<(), ScoutyError> {
     let client = scouty.client();
-    let _api = client.clone().to_runtime_api::<KusamaApi>();
+    let _api = client.clone().to_runtime_api::<PolkadotApi>();
     let config = CONFIG.clone();
 
     // Try run hook
@@ -193,9 +352,11 @@ async fn try_run_democracy_started_hook(
     debug!("network {:?}", network);
 
     // Prepare notification report
-    let data = RawDataDemocracy {
+    let data = RawData {
         network,
         referendum,
+        section: Section::Democracy,
+        ..Default::default()
     };
 
     let report = Report::from(data);
@@ -211,7 +372,7 @@ async fn try_run_session_hooks(
     event: api::session::events::NewSession,
 ) -> Result<(), ScoutyError> {
     let client = scouty.client();
-    let api = client.clone().to_runtime_api::<KusamaApi>();
+    let api = client.clone().to_runtime_api::<PolkadotApi>();
     let config = CONFIG.clone();
 
     // Get Era index
@@ -341,10 +502,12 @@ async fn try_run_session_hooks(
     let network = Network::load(client).await?;
     debug!("network {:?}", network);
 
-    let data = RawDataSession {
+    let data = RawData {
         network,
         session,
         validators,
+        section: Section::Session,
+        ..Default::default()
     };
 
     let report = Report::from(data);
@@ -361,7 +524,7 @@ async fn get_nominators(
     stash: &AccountId32,
 ) -> Result<Vec<String>, ScoutyError> {
     let client = scouty.client().clone();
-    let api = client.to_runtime_api::<KusamaApi>();
+    let api = client.to_runtime_api::<PolkadotApi>();
 
     let exposure = api
         .storage()
@@ -379,7 +542,7 @@ async fn get_nominators(
 
 async fn collect_validators_data(scouty: &Scouty) -> Result<Validators, ScoutyError> {
     let client = scouty.client().clone();
-    let api = client.to_runtime_api::<KusamaApi>();
+    let api = client.to_runtime_api::<PolkadotApi>();
     let config = CONFIG.clone();
 
     // Verify session active validators
@@ -422,7 +585,7 @@ async fn get_display_name(
     sub_account_name: Option<String>,
 ) -> Result<String, ScoutyError> {
     let client = scouty.client();
-    let api = client.clone().to_runtime_api::<KusamaApi>();
+    let api = client.clone().to_runtime_api::<PolkadotApi>();
 
     match api
         .storage()
