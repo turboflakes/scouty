@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.15] - 2021-01-15
+
+### Changed
+
+- Fix offline event
+
 ## [0.1.14] - 2021-01-15
 
 ### Added
