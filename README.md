@@ -18,7 +18,7 @@ To keep up with **Referenda** and vote from your favorite site - *Polkadot.js, P
 
 To trigger **node backups** every other era and publish them online.
 
-### To write **your own bash scripts** and hook them up to any on-chain event supported by `scouty`.
+To write **your own bash scripts** and hook them up to any on-chain event supported by `scouty`.
 
 ## Hooks 🪝
 
@@ -94,7 +94,7 @@ SCOUTY_MATRIX_BOT_USER=@your-own-scouty-bot-account:matrix.org
 SCOUTY_MATRIX_BOT_PASSWORD=anotthateasypassword
 ```
 
-### Run `scouty` a *systemd* service
+### Run `scouty` as a *systemd* service
 
 First create a unit file called `scouty.service` in `/etc/systemd/system/`
 
