@@ -31,11 +31,13 @@ To write **your own bash scripts** and hook them up to any on-chain event suppor
 - At the begining of the last session of an era - if a **validator in the active set becomes inactive in the next era**, the following hook is executed ->  [`_validator_starts_inactive_next_era.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_starts_inactive_next_era.sh) (Note: only executed for the stashes predefined)
 - Everytime a validator is **Chilled** the following hook is executed ->  [`_validator_chilled.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_chilled.sh) (Note: only executed for the stashes predefined)
 - Everytime a **Slash occurred** the following hook is executed ->  [`_validator_slashed.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_slashed.sh)
-- At the end of every Era - if a validator is seen to be **Offline** the following hook is executed ->  [`_validator_offline.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_offline.sh) (Note: only executed for the stashes predefined)
+- At the end of every era - if a **validator is seen to be Offline** the following hook is executed ->  [`_validator_offline.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_offline.sh) (Note: only executed for the stashes predefined)
 
 ### The possibilities are endless ✨
 
-A few example scripts are available here -> [hooks.examples](https://github.com/turboflakes/scouty/tree/main/hooks.examples). I encourage you to try out your *bash* scripts with `scouty` and please feedback and share some examples with the community by pushing a PR [here](https://github.com/turboflakes/scouty/tree/main/hooks.examples).
+A few example scripts are available here -> [hooks.examples](https://github.com/turboflakes/scouty/tree/main/hooks.examples). I encourage you to try out your *bash* scripts with `scouty` and please feedback and share some examples with the community by submitting a pull request [here](https://github.com/turboflakes/scouty/tree/main/hooks.examples).
+
+Note: By default every hook is followed by a custom Matrix message. Read [here](https://github.com/turboflakes/scouty#scouty-bot-matrix) on how to setup -> Scouty Bot.
 
 ## Installation
 
@@ -128,7 +130,7 @@ systemctl status scouty.service
 To look out for tailed logs with `journalctl` run
 
 ```bash
-journalctl -f -u polkadot-validator
+journalctl -f -u scouty
 ```
 
 ### Scouty Bot ([Matrix](https://matrix.org/))
@@ -191,6 +193,23 @@ Otherwise, recompile the code on changes and run the binary
 cargo watch -x 'run --bin scouty'
 ```
 
+### Downloading metadata from a Substrate node
+
+Use the [`subxt-cli`](./cli) tool to download the metadata for your target runtime from a node.
+
+Install
+```bash
+cargo install subxt-cli
+```
+Save the encoded metadata to a file
+```bash
+subxt metadata --url https://westend-rpc.polkadot.io  -f bytes > westend_metadata.scale
+```
+(Optional) Generate runtime API client code from metadata
+```bash
+subxt codegen --url https://westend-rpc.polkadot.io | rustfmt --edition=2018 --emit=stdout > westend_runtime.rs
+```
+
 ## Collaboration
 
 Have an idea for a new feature, a fix or you found a bug, please open an [issue](https://github.com/turboflakes/scouty/issues) or submit a [pull request](https://github.com/turboflakes/scouty/pulls).
@@ -216,4 +235,4 @@ If you like this project 💯
 
 __
 
-Enjoy `scouty`
+Enjoy `scouty` and hook things up
