@@ -221,27 +221,26 @@ async fn try_run_im_online_some_offline_hook(
         for (account_id, _exposure) in event.offline.iter() {
             if account_id == &v.stash {
                 v.is_offline = true;
+
+                // Try HOOK_VALIDATOR_OFFLINE
+                let args = vec![
+                    v.stash.to_string(),
+                    v.name.to_string(),
+                    format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
+                    v.is_active.to_string(),
+                    v.is_queued.to_string(),
+                ];
+
+                // Try run hook
+                let hook = Hook::try_run(
+                    HOOK_VALIDATOR_OFFLINE,
+                    &config.hook_validator_offline_path,
+                    args.clone(),
+                )?;
+                v.hooks.push(hook);
                 break;
             }
         }
-
-        // Try HOOK_VALIDATOR_OFFLINE
-        let args = vec![
-            v.stash.to_string(),
-            v.name.to_string(),
-            format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
-            v.is_active.to_string(),
-            v.is_queued.to_string(),
-        ];
-
-        // Try run hook
-        let hook = Hook::try_run(
-            HOOK_VALIDATOR_OFFLINE,
-            &config.hook_validator_offline_path,
-            args.clone(),
-        )?;
-        v.hooks.push(hook);
-        break;
     }
 
     debug!("validators {:?}", validators);
