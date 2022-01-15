@@ -2,23 +2,40 @@
 
 `scouty` is a command-line interface (CLI) to keep an **eye** on substrate-based chains and **hook** things up.
 
-## Why use `scouty-cli`
+## Why use `scouty`
 
-To get **notified** about important on-chain events linked to Session, Staking, ImOnline and Democracy pallets.
+To get **notified** about on-chain events emitted by certain operations linked to Session, Staking, ImOnline and Democracy pallets.
 
-To monitor, intercept and **extend functionality** on certain on-chain events.
+To monitor, intercept and **extend functionality** as soon as on-chain events are triggered.
 
 To get access to on-chain data and customize messages **written by you** delivered to a matrix **private** room.
 
 To warm up or cool down you validator node resources by knowing when it goes active or inactive within one session.
 
-To keep up with **Referenda** and vote on your favorite site - *Polkadot.js, Polkassembly, Commonwealth* - through a custom link.
+To **monitor 1KV nominations** and trigger special kudos when your validator becomes independent :)
 
-To write **your own bash scripts** and hook them up to any on-chain event subscribed by `scouty`.
+To keep up with **Referenda** and vote from your favorite site - *Polkadot.js, Polkassembly, Commonwealth* - through a direct link.
 
-## The possibilities are endless ✨
+To trigger **node backups** every other era and publish them online.
 
-A few example scripts are available here -> [hooks.examples](https://github.com/turboflakes/scouty/tree/main/hooks.examples). I encourage you to try out your *bash* scripts with `scouty` and please share some examples with the community by pushing a PR [here](https://github.com/turboflakes/scouty/tree/main/hooks.examples).
+### To write **your own bash scripts** and hook them up to any on-chain event supported by `scouty`.
+
+## Hooks 🪝
+
+`scouty v0.1.13` supports 8 native hooks ready to be explored:
+
+- At every **New Era** the following hook is executed ->  [`_new_era.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_new_era.sh)
+- At every **New Session** the following hook is executed ->  [`_new_session.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_new_session.sh)
+- Everytime a **Referendum Starts** the following hook is executed ->  [`_democracy_started.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_democracy_started.sh)
+- At the begining of the last session of an era - if a **validator in the waiting set becomes active in the next era**, the following hook is executed ->  [`_validator_starts_active_next_era.s`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_starts_active_next_era.sh) (Note: only executed for the stashes predefined)
+- At the begining of the last session of an era - if a **validator in the active set becomes inactive in the next era**, the following hook is executed ->  [`_validator_starts_inactive_next_era.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_starts_inactive_next_era.sh) (Note: only executed for the stashes predefined)
+- Everytime a validator is **Chilled** the following hook is executed ->  [`_validator_chilled.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_chilled.sh) (Note: only executed for the stashes predefined)
+- Everytime a **Slash occurred** the following hook is executed ->  [`_validator_slashed.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_slashed.sh)
+- At the end of every Era - if a validator is seen to be **Offline** the following hook is executed ->  [`_validator_offline.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_offline.sh) (Note: only executed for the stashes predefined)
+
+### The possibilities are endless ✨
+
+A few example scripts are available here -> [hooks.examples](https://github.com/turboflakes/scouty/tree/main/hooks.examples). I encourage you to try out your *bash* scripts with `scouty` and please feedback and share some examples with the community by pushing a PR [here](https://github.com/turboflakes/scouty/tree/main/hooks.examples).
 
 ## Installation
 
@@ -180,7 +197,7 @@ Have an idea for a new feature, a fix or you found a bug, please open an [issue]
 
 Any feedback is welcome.
 
-# About
+## About
 
 `scouty` was made by <a href="https://turboflakes.io" target="_blank">TurboFlakes</a>.
 
@@ -195,8 +212,7 @@ If you like this project 💯
 
 ### Quote
 
-> "Everything you can imagine is real."
--- Pablo Picasso
+> "Everything you can imagine is real." -- Pablo Picasso
 
 __
 
