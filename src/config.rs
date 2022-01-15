@@ -125,7 +125,7 @@ fn get_config() -> Config {
           Arg::with_name("matrix-bot-user")
             .long("matrix-bot-user")
             .takes_value(true)
-            .help("Your new 'Scouty Bot' matrix user. e.g. '@your-own-scouty-bot-account:matrix.org' this user account will be your 'Scouty Bot' which will be responsible to send messages/notifications to your private or public 'Scouty Bot' rooms."))
+            .help("Your new 'Scouty Bot' matrix user. e.g. '@your-own-scouty-bot-account:matrix.org' this user account will be your 'Scouty Bot' which will be responsible to send messages/notifications to your private 'Scouty Bot' room."))
     .arg(
       Arg::with_name("matrix-bot-password")
         .long("matrix-bot-password")
@@ -135,14 +135,7 @@ fn get_config() -> Config {
       Arg::with_name("disable-matrix")
         .long("disable-matrix")
         .help(
-          "Disable matrix bot for 'scouty'. (e.g. with this flag active 'scouty' will not send messages/notifications about claimed or unclaimed staking rewards to your private or public 'Scouty Bot' rooms) (https://matrix.org/)",
-        ),
-    )
-    .arg(
-      Arg::with_name("disable-public-matrix-room")
-        .long("disable-public-matrix-room")
-        .help(
-          "Disable notifications to matrix public rooms for 'scouty'. (e.g. with this flag active 'scouty' will not send messages/notifications about claimed or unclaimed staking rewards to any public 'Scouty Bot' room)",
+          "Disable matrix bot for 'scouty'. (e.g. with this flag active 'scouty' will not send messages/notifications to your private 'Scouty Bot' room) (https://matrix.org/)",
         ),
     )
     .arg(
@@ -155,7 +148,7 @@ fn get_config() -> Config {
     .arg(
       Arg::with_name("short")
         .long("short")
-        .help("Display only essential information (e.g. with this flag active 'scouty' will only send essential messages/notifications about claimed rewards)"))
+        .help("Display only essential information (e.g. with this flag active 'scouty' will hide certain sections in a message)"))
     .arg(
       Arg::with_name("error-interval")
         .long("error-interval")
@@ -168,7 +161,7 @@ fn get_config() -> Config {
         .long("stashes")
         .takes_value(true)
         .help(
-          "Validator stash addresses for which 'scouty view', 'scouty' or 'scouty rewards' will be applied. If needed specify more than one (e.g. stash_1,stash_2,stash_3).",
+          "Validator stash addresses for which 'scouty' will take a particular eye. If needed specify more than one (e.g. stash_1,stash_2,stash_3).",
         ),
     )
     .arg(
@@ -369,10 +362,6 @@ fn get_config() -> Config {
 
     if matches.is_present("disable-matrix") {
         env::set_var("SCOUTY_MATRIX_DISABLED", "true");
-    }
-
-    if matches.is_present("disable-public-matrix-room") {
-        env::set_var("SCOUTY_MATRIX_PUBLIC_ROOM_DISABLED", "true");
     }
 
     if let Some(matrix_user) = matches.value_of("matrix-user") {
