@@ -22,7 +22,7 @@ To write **your own bash scripts** and hook them up to any on-chain event suppor
 
 ## Hooks 🪝
 
-`scouty v0.1.13` supports 8 native hooks ready to be explored:
+`scouty v0.1.14` supports 8 native hooks ready to be explored:
 
 - At every **New Era** the following hook is executed ->  [`_new_era.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_new_era.sh)
 - At every **New Session** the following hook is executed ->  [`_new_session.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_new_session.sh)
@@ -46,7 +46,7 @@ Note: By default every hook is followed by a custom Matrix message. Read [here](
 # create `scouty-cli` directory
 mkdir /opt/scouty-cli
 # download `scouty` binary latest version
-wget -P /scouty-cli https://github.com/turboflakes/scouty/releases/download/v0.1.13/scouty
+wget -P /scouty-cli https://github.com/turboflakes/scouty/releases/download/v0.1.14/scouty
 # make `scouty` binary file executable
 chmod +x /opt/scouty-cli/scouty
 ```
