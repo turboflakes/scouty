@@ -139,6 +139,85 @@ If you set up `scouty` on your server with a matrix user 👉 you get your own S
 
 To enable **Scouty Bot** you will need to create a specific account on Element or similar and copy the values to the respective environment variables `SCOUTY_MATRIX_BOT_USER` and `SCOUTY_MATRIX_BOT_PASSWORD` like in the configuration example file `.env.example`. You may also want to set your regular matrix user to the environment variable `SCOUTY_MATRIX_USER`. So that **Scouty Bot** could create a private room and send in messages. By default **Scouty Bot** will automatically invite your regular matrix user to a private room.
 
+## Usage
+
+Run `--help` to check all `scouty` flags and options.
+
+Note: All flags and options are also available through environment variables if defined in `.env` configuration file. You can choose which way you want to configure `scouty`. Take in consideration that if the same variable is defined on both sides e.g. defined in `.env` and through CLI flag/option, `scouty` will take the value defined by CLI.
+
+```bash
+#!/bin/bash
+# if you need a custom scouty check all the options and flags available
+scouty --help
+```
+
+```bash
+USAGE:
+    scouty [FLAGS] [OPTIONS] [CHAIN]
+
+FLAGS:
+        --debug                              Prints debug information verbosely.
+        --disable-matrix                     Disable matrix bot for 'scouty'. (e.g. with this flag active 'scouty' will
+                                             not send messages/notifications to your private 'Scouty Bot' room)
+                                             (https://matrix.org/)
+        --disable-matrix-bot-display-name    Disable matrix bot display name update for 'scouty'. (e.g. with this flag
+                                             active 'scouty' will not change the matrix bot user display name)
+        --expose-nominators                  Expose the nominators stashes as a new positional argument in hooks. For
+                                             each validator stash defined `scouty` will look for which nominators are
+                                             currently backing it.
+    -h, --help                               Prints help information
+        --short                              Display only essential information (e.g. with this flag active 'scouty'
+                                             will hide certain sections in a message)
+    -V, --version                            Prints version information
+
+OPTIONS:
+    -c, --config-path <FILE>
+            Sets a custom config file path. The config file contains 'scouty' configuration variables. [default: .env]
+
+        --error-interval <error-interval>
+            Interval value (in minutes) from which 'scouty' will restart again in case of a critical error. [default:
+            30]
+        --hook-new-era-path <FILE>
+            Sets the path for the script that is called every new era.
+
+        --hook-new-session-path <FILE>
+            Sets the path for the script that is called every new session.
+
+        --hook-validator-chilled-path <FILE>
+            Sets the path for the script that is called every time one of the Validator stashes defined is chilled.
+
+        --hook-validator-offline-path <FILE>
+            Sets the path for the script that is called every time one of the Validator stashes defined is offline at
+            the end of a session.
+        --hook-validator-slashed-path <FILE>
+            Sets the path for the script that is called every time a Slash occurred on the network.
+
+        --hook-validator-starts-active-next-era-path <FILE>
+            Sets the path for the script that is called on the last session of an era, if the stash is NOT ACTIVE and
+            keys are QUEUED for the next Session/Era.
+        --hook-validator-starts-inactive-next-era-path <FILE>
+            Sets the path for the script that is called on the last session of an era, if the stash is ACTIVE and keys
+            are NOT QUEUED for the next Session/Era.
+        --matrix-bot-password <matrix-bot-password>              Password for the 'Scouty Bot' matrix user sign in.
+        --matrix-bot-user <matrix-bot-user>
+            Your new 'Scouty Bot' matrix user. e.g. '@your-own-scouty-bot-account:matrix.org' this user account will be
+            your 'Scouty Bot' which will be responsible to send messages/notifications to your private 'Scouty Bot'
+            room.
+        --matrix-user <matrix-user>
+            Your regular matrix user. e.g. '@your-regular-matrix-account:matrix.org' this user account will receive
+            notifications from your other 'Scouty Bot' matrix account.
+    -s, --stashes <stashes>
+            Validator stash addresses for which 'scouty' will take a particular eye. If needed specify more than one
+            (e.g. stash_1,stash_2,stash_3).
+    -w, --substrate-ws-url <substrate-ws-url>
+            Substrate websocket endpoint for which 'scouty' will try to connect. (e.g. wss://kusama-rpc.polkadot.io)
+            (NOTE: substrate_ws_url takes precedence than <CHAIN> argument)
+
+ARGS:
+    <CHAIN>    Sets the substrate-based chain for which 'scouty' will try to connect [possible values: westend,
+               kusama, polkadot]
+```
+
 ## Development / Build from Source
 
 If you'd like to build from source, first install Rust.
@@ -165,7 +244,7 @@ Once done, finish installing the support software
 sudo apt install build-essential git clang libclang-dev pkg-config libssl-dev
 ```
 
-Build `crunch` by cloning this repository
+Build `scouty` by cloning this repository
 
 ```bash
 #!/bin/bash
