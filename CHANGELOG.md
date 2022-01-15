@@ -15,4 +15,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Easily connect to westend, kusama or polkadot Parity public nodes
 - Set optional matrix bot
 - Hooks executed by on-chain events
-
+- Runtimes (Polkadot/9140, Kusama/9150, Westend/9150)
