@@ -4,7 +4,7 @@
 
 ## Why use `scouty`
 
-To get **notified** about on-chain events emitted by certain operations linked to Session, Staking, ImOnline and Democracy pallets.
+To get **notified** about on-chain events emitted by certain operations linked to *Session*, *Staking*, *ImOnline* and *Democracy* pallets.
 
 To monitor, intercept and **extend functionality** as soon as on-chain events are triggered.
 
@@ -131,6 +131,50 @@ To look out for tailed logs with `journalctl` run
 
 ```bash
 journalctl -f -u scouty
+```
+
+If you have started scouty by now you should get these warnings in your logs
+```bash
+WARN  scouty::hooks] Hook script - New session - filename (/opt/scouty-cli/hooks/_new_session.sh) not defined
+WARN  scouty::hooks] Hook script - New era - filename (/opt/scouty-cli/hooks/_new_era.sh) not defined
+WARN  scouty::hooks] Hook script - Validator starts active next era - filename (/opt/scouty-cli/hooks/_validator_starts_active_next_era.sh) not defined
+WARN  scouty::hooks] Hook script - Validator starts inactive next era - filename (/opt/scouty-cli/hooks/_validator_starts_inactive_next_era.sh) not defined
+WARN  scouty::hooks] Hook script - Validator has been slashed - filename (/opt/scouty-cli/hooks/_validator_slashed.sh) not defined
+WARN  scouty::hooks] Hook script - Validator has been chilled - filename (/opt/scouty-cli/hooks/_validator_chilled.sh) not defined
+WARN  scouty::hooks] Hook script - Validator has been offline - filename (/opt/scouty-cli/hooks/_validator_offline.sh) not defined
+WARN  scouty::hooks] Hook script - Democracy started - filename (/opt/scouty-cli/hooks/_democracy_started.sh) not defined
+```
+
+These are just warnings to tell you that those `bash script` files are not available and `scouty` will not be able to run them.
+
+So let's just set these up as our last step. Create a sub directory `hooks` inside `scouty-cli`
+
+```bash
+ mkdir /opt/scouty-cli/hooks
+```
+
+If you have cloned the repo on your local machine you can securely copy the default hook files from [here](https://github.com/turboflakes/scouty/tree/main/hooks) or copy some of the [examples](https://github.com/turboflakes/scouty/tree/main/hooks.examples) to your remote server with `scp`
+
+```bash
+scp -r ./hooks/* root@IPADDRESS:/opt/scouty-cli/hooks
+```
+
+And make these hooks executable by running
+
+```bash
+chmod +x /opt/scouty-cli/hooks/_new_session.sh
+chmod +x /opt/scouty-cli/hooks/_new_era.sh
+chmod +x /opt/scouty-cli/hooks/_validator_starts_active_next_era.sh
+chmod +x /opt/scouty-cli/hooks/_validator_starts_inactive_next_era.sh
+chmod +x /opt/scouty-cli/hooks/_validator_slashed.sh
+chmod +x /opt/scouty-cli/hooks/_validator_chilled.sh
+chmod +x /opt/scouty-cli/hooks/_democracy_started.sh
+```
+
+Finally restart `scouty` *systemd* service
+
+```bash
+systemctl restart scouty.service
 ```
 
 ### Scouty Bot ([Matrix](https://matrix.org/))

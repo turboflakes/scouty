@@ -52,5 +52,8 @@ then
         echo "** scouty v$INPUT_VERSION successfully downloaded and verified $FILENAME **"
 else
         echo "Error: SHA256 doesn't match!"
-        rm "$FILENAME*"
+        if [[ -f "$FILENAME" ]]
+        then
+                rm "$FILENAME*"
+        fi
 fi
