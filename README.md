@@ -55,14 +55,16 @@ Note: For an easier installation and faster updates download [`scouty-update.sh`
 
 ## Configuration
 
-Create a configuration file `.env` inside `scouty-cli` folder and copy the default variables from [`.env.example`](https://github.com/turboflakes/scouty/blob/main/.env.example) (Note: `.env` is the default name and a hidden file, if you want something different you can adjust it later with the option `scouty --config-path /opt/scouty-cli/.env.kusama` )
+First create a configuration file `.env` inside `scouty-cli` folder and copy the default variables from [`.env.example`](https://github.com/turboflakes/scouty/blob/main/.env.example) (Note: `.env` is the default name and a hidden file, if you want something different you can adjust it later with the option `scouty --config-path /opt/scouty-cli/.env.kusama` )
 
 ```bash
-#!/bin/bash
-# create/open a file with a file editor (Vim in this case) and add/change the configuration
-# variables with your own personal values
-vi /scouty-cli/.env
-# when ready write and quit (:wq!)
+touch /opt/scouty-cli/.env
+```
+
+Open the file (using Vim in this case) and add/change the configuration variables with your own values.
+
+```bash
+vi /opt/scouty-cli/.env
 ```
 
 Configuration file example: [`.env.example`](https://github.com/turboflakes/scouty/blob/main/.env.example)
@@ -94,6 +96,8 @@ SCOUTY_HOOK_DEMOCRACY_STARTED_PATH=/opt/scouty-cli/hooks/_democracy_started.sh
 SCOUTY_MATRIX_USER=@your-regular-matrix-account:matrix.org
 SCOUTY_MATRIX_BOT_USER=@your-own-scouty-bot-account:matrix.org
 SCOUTY_MATRIX_BOT_PASSWORD=anotthateasypassword
+#
+# when ready write and quit (:wq!)
 ```
 
 ### Run `scouty` as a *systemd* service
