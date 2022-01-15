@@ -194,7 +194,7 @@ async fn try_run_im_online_some_offline_hook(
     event: api::im_online::events::SomeOffline,
 ) -> Result<(), ScoutyError> {
     let client = scouty.client();
-    let _api = client.clone().to_runtime_api::<PolkadotApi>();
+    let _api = client.clone().to_runtime_api::<WestendApi>();
     let config = CONFIG.clone();
 
     // Collect validators info based on config stashes
