@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.17] - 2021-01-16
+
+### Added
+
+- Add hook `_init.sh` that runs everytime `scouty` starts. It helps to validate scripts
+
+### Changed
+
+- Fix parameter expansion for queued session argument in scripts
+
 ## [0.1.16] - 2021-01-15
 
 ### Changed

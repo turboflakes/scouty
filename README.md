@@ -22,16 +22,17 @@ To write **your own bash scripts** and hook them up to any on-chain event suppor
 
 ## Hooks 🪝
 
-`scouty v0.1.16` supports 8 native hooks ready to be explored:
+`scouty v0.1.17` supports 9 native hooks ready to be explored:
 
+- Everytime `scouty` **starts** the following hook is executed ->  [`_init.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_init.sh) (Note: This hook can be used to try out and test new scripts)
 - At every **New Era** the following hook is executed ->  [`_new_era.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_new_era.sh)
 - At every **New Session** the following hook is executed ->  [`_new_session.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_new_session.sh)
 - Everytime a **Referendum Starts** the following hook is executed ->  [`_democracy_started.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_democracy_started.sh)
-- At the begining of the last session of an era - if a **validator in the waiting set becomes active in the next era**, the following hook is executed ->  [`_validator_starts_active_next_era.s`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_starts_active_next_era.sh) (Note: only executed for the stashes predefined)
-- At the begining of the last session of an era - if a **validator in the active set becomes inactive in the next era**, the following hook is executed ->  [`_validator_starts_inactive_next_era.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_starts_inactive_next_era.sh) (Note: only executed for the stashes predefined)
+- At the begining of the last session of an era, if a validator is in the **waiting set** and is **queued** to be **active in the next era**, the following hook is executed ->  [`_validator_starts_active_next_era.s`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_starts_active_next_era.sh) (Note: only executed for the stashes predefined)
+- At the begining of the last session of an era, if a validator is in the **active set** and is **NOT queued** to be active in the next era, the following hook is executed ->  [`_validator_starts_inactive_next_era.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_starts_inactive_next_era.sh) (Note: only executed for the stashes predefined)
 - Everytime a validator is **Chilled** the following hook is executed ->  [`_validator_chilled.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_chilled.sh) (Note: only executed for the stashes predefined)
 - Everytime a **Slash occurred** the following hook is executed ->  [`_validator_slashed.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_slashed.sh)
-- At the end of every era - if a **validator is seen to be Offline** the following hook is executed ->  [`_validator_offline.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_offline.sh) (Note: only executed for the stashes predefined)
+- At the end of every era, if a **validator is seen to be Offline** the following hook is executed ->  [`_validator_offline.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_offline.sh) (Note: only executed for the stashes predefined)
 
 ### The possibilities are endless ✨
 
@@ -46,7 +47,7 @@ Note: By default every hook is followed by a custom Matrix message. Read [here](
 # create `scouty-cli` directory
 mkdir /opt/scouty-cli
 # download `scouty` binary latest version
-wget -P /scouty-cli https://github.com/turboflakes/scouty/releases/download/v0.1.16/scouty
+wget -P /scouty-cli https://github.com/turboflakes/scouty/releases/download/v0.1.17/scouty
 # make `scouty` binary file executable
 chmod +x /opt/scouty-cli/scouty
 ```
@@ -83,6 +84,7 @@ SCOUTY_SUBSTRATE_WS_URL=wss://localhost:9944
 #SCOUTY_SUBSTRATE_WS_URL=wss://westend-rpc.polkadot.io:443
 #
 # Hooks configuration bash script filenames
+SCOUTY_HOOK_INIT_PATH=/opt/scouty-cli/hooks/_init.sh
 SCOUTY_HOOK_NEW_SESSION_PATH=/opt/scouty-cli/hooks/_new_session.sh
 SCOUTY_HOOK_NEW_ERA_PATH=/opt/scouty-cli/hooks/_new_era.sh
 SCOUTY_HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA_PATH=/opt/scouty-cli/hooks/_validator_starts_active_next_era.sh
