@@ -35,6 +35,7 @@ echo "! 5th - Session keys queued? -> $5"
 echo "! 6th - Era -> $6"
 echo "! 7th - Session -> $7"
 echo "! 8th - Eras session index -> $8"
+echo "! (9th) - Nominators (--expose-nominators flag must be set) -> $9"
 echo "! -------------------------------"
 #
 FILENAME="$(dirname $0)/1kv/nominators.sh"
