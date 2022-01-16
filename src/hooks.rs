@@ -26,6 +26,7 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::{process::Command, process::Stdio, result::Result};
 
+pub const HOOK_INIT: &'static str = "Scouty initialized";
 pub const HOOK_NEW_SESSION: &'static str = "New session";
 pub const HOOK_NEW_ERA: &'static str = "New era";
 pub const HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA: &'static str = "Validator starts active next era";

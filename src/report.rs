@@ -27,6 +27,12 @@ use std::{convert::TryInto, result::Result};
 use subxt::{sp_runtime::AccountId32, Client, DefaultConfig};
 
 #[derive(Debug, Default)]
+pub struct Init {
+    pub block_number: u32,
+    pub now: u64,
+}
+
+#[derive(Debug, Default)]
 pub struct Network {
     pub name: String,
     pub token_symbol: String,
@@ -128,6 +134,7 @@ pub struct Slash {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Section {
+    Init,
     Session,
     Slash,
     Chill,
@@ -143,6 +150,7 @@ impl Default for Section {
 
 #[derive(Default)]
 pub struct RawData {
+    pub init: Init,
     pub network: Network,
     pub validators: Validators,
     pub session: Session,
@@ -201,6 +209,7 @@ impl From<RawData> for Report {
     /// Converts a Scouty `RawData` into a [`Report`].
     fn from(data: RawData) -> Report {
         let mut report = Report::new();
+
         // Scouty package
         report.add_raw_text(format!(
             "🤖 <code>{} v{}</code>",
@@ -211,6 +220,7 @@ impl From<RawData> for Report {
         // --- Specific report section here [START] -->
 
         match data.section {
+            Section::Init => section_init(&mut report, data),
             Section::Session => section_session(&mut report, data),
             Section::Democracy => section_democracy(&mut report, data),
             Section::Slash => section_slash(&mut report, data),
@@ -232,18 +242,7 @@ impl From<RawData> for Report {
     }
 }
 
-fn section_session(report: &mut Report, data: RawData) -> &Report {
-    // Network info
-    report.add_break();
-    report.add_raw_text(format!(
-        "🔗 <b>{}</b> -> {} {} session ({}) of era {}",
-        data.network.name,
-        session_flag(data.session.eras_session_index),
-        session_ordinal_number(data.session.eras_session_index),
-        data.session.current_session_index,
-        data.session.active_era_index
-    ));
-
+fn sub_section_validators(report: &mut Report, data: RawData) -> &Report {
     // Validators info
     for validator in data.validators {
         report.add_break();
@@ -267,8 +266,35 @@ fn section_session(report: &mut Report, data: RawData) -> &Report {
             }
         }
     }
-
     report
+}
+
+fn section_init(report: &mut Report, data: RawData) -> &Report {
+    report.add_break();
+    report.add_raw_text(format!(
+        "🔗 <b>{}</b> -> current block <a href=\"https://{}.subscan.io/block/{}\">#{}</a>",
+        data.network.name,
+        data.network.name.to_lowercase(),
+        data.init.block_number,
+        data.init.block_number
+    ));
+
+    sub_section_validators(report, data)
+}
+
+fn section_session(report: &mut Report, data: RawData) -> &Report {
+    // Network info
+    report.add_break();
+    report.add_raw_text(format!(
+        "🔗 <b>{}</b> -> {} {} session ({}) of era {}",
+        data.network.name,
+        session_flag(data.session.eras_session_index),
+        session_ordinal_number(data.session.eras_session_index),
+        data.session.current_session_index,
+        data.session.active_era_index
+    ));
+
+    sub_section_validators(report, data)
 }
 
 fn section_democracy(report: &mut Report, data: RawData) -> &Report {

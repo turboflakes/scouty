@@ -18,7 +18,7 @@
 
 FILENAME="$(basename $0)"
 
-printf "> /$FILENAME $1 $2 \n"
+printf "> $FILENAME $1 $2 \n"
 
 for row in $( curl 'https://kusama.w3f.community/nominators' | jq -r '.[] | @base64' ); do
     _jq() {
@@ -26,7 +26,7 @@ for row in $( curl 'https://kusama.w3f.community/nominators' | jq -r '.[] | @bas
     }
     NOMINATOR=$(_jq '.stash')
     if [[ "$2" == *"$NOMINATOR"* ]]; then
-        printf "! 1KV -> $NOMINATOR"
+        printf "! 1KV nominator -> $NOMINATOR"
         exit 0
     fi
 done

@@ -66,6 +66,8 @@ pub struct Config {
     pub is_short: bool,
     // hooks configuration
     #[serde(default)]
+    pub hook_init_path: String,
+    #[serde(default)]
     pub hook_new_session_path: String,
     #[serde(default)]
     pub hook_new_era_path: String,
@@ -192,6 +194,15 @@ fn get_config() -> Config {
         ),
       )
     .arg(
+        Arg::with_name("hook-init-path")
+          .long("hook-init-path")
+          .takes_value(true)
+          .value_name("FILE")
+          .help(
+            "Sets the path for the script that is called every time `scouty` starts. Here is a good place for try out new things and test new scripts.",
+          ),
+      )
+    .arg(
       Arg::with_name("hook-new-session-path")
         .long("hook-new-session-path")
         .takes_value(true)
@@ -300,6 +311,10 @@ fn get_config() -> Config {
 
     if matches.is_present("short") {
         env::set_var("SCOUTY_IS_SHORT", "true");
+    }
+
+    if let Some(hook_init_path) = matches.value_of("hook-init-path") {
+        env::set_var("SCOUTY_HOOK_INIT_PATH", hook_init_path);
     }
 
     if let Some(hook_new_session_path) = matches.value_of("hook-new-session-path") {

@@ -22,9 +22,9 @@
 use crate::config::{Config, CONFIG};
 use crate::errors::ScoutyError;
 use crate::hooks::{
-    Hook, HOOK_DEMOCRACY_STARTED, HOOK_NEW_ERA, HOOK_NEW_SESSION, HOOK_VALIDATOR_CHILLED,
-    HOOK_VALIDATOR_OFFLINE, HOOK_VALIDATOR_SLASHED, HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA,
-    HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA,
+    Hook, HOOK_DEMOCRACY_STARTED, HOOK_INIT, HOOK_NEW_ERA, HOOK_NEW_SESSION,
+    HOOK_VALIDATOR_CHILLED, HOOK_VALIDATOR_OFFLINE, HOOK_VALIDATOR_SLASHED,
+    HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA, HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA,
 };
 use crate::matrix::Matrix;
 use crate::runtimes::{
@@ -151,6 +151,7 @@ impl Scouty {
         let config = CONFIG.clone();
 
         // Verify if hooks scripts are available
+        Hook::exists(HOOK_INIT, &config.hook_init_path);
         Hook::exists(HOOK_NEW_SESSION, &config.hook_new_session_path);
         Hook::exists(HOOK_NEW_ERA, &config.hook_new_era_path);
         Hook::exists(
@@ -167,9 +168,9 @@ impl Scouty {
         Hook::exists(HOOK_DEMOCRACY_STARTED, &config.hook_democracy_started_path);
 
         match self.runtime {
-            SupportedRuntime::Polkadot => polkadot::subscribe_on_chain_events(self).await,
-            SupportedRuntime::Kusama => kusama::subscribe_on_chain_events(self).await,
-            SupportedRuntime::Westend => westend::subscribe_on_chain_events(self).await,
+            SupportedRuntime::Polkadot => polkadot::init_and_subscribe_on_chain_events(self).await,
+            SupportedRuntime::Kusama => kusama::init_and_subscribe_on_chain_events(self).await,
+            SupportedRuntime::Westend => westend::init_and_subscribe_on_chain_events(self).await,
         }
     }
 }

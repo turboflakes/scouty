@@ -1,14 +1,21 @@
 #!/bin/bash
 #
 # > make a file executable
-# chmod +x ./_validator_starts_inactive_next_era.sh
+# chmod +x ./_init.sh
 #
 # > positional arguments:
 # 1st - Stash
 # 2nd - Identity
 # 3rd - Queued session keys (0x..)
-# 4th - Next Era
-# 5th - Next Session 
+# 4th - Is active? (true/false)
+# 5th - Session keys queued? (true/false)
+# 6th - Era
+# 7th - Session
+# 8th - Eras session index [1,2,3,4,5,6]
+# 9th - Current block
+#
+# The following arguments depend on exposed flags
+# 10th - Nominator stashes [stash_1, stash_2, ..]
 #
 # > Special character '!' controls message visibility on Matrix (Element)
 # Any message that starts with '!' will be sent to Matrix, to the user private room
@@ -24,9 +31,20 @@ echo "! Positional arguments:"
 echo "! 1st - Stash -> $1" 
 echo "! 2nd - Identity -> $2"
 echo "! 3rd - Queued session keys -> ${3:0:16}.."
-echo "! 4th - Next Era -> $4"
-echo "! 5th - Next Session -> $5"
+echo "! 4th - Is active? -> $4"
+echo "! 5th - Session keys queued? -> $5"
+echo "! 6th - Era -> $6"
+echo "! 7th - Session -> $7"
+echo "! 8th - Eras session index -> $8"
+echo "! 9th - Current block -> $9"
+echo "! (10th) - Nominators (--expose-nominators flag must be set) -> ${10}"
 echo "! -------------------------------"
-echo "! e.g. 🏎️ Last lap! $2 will be 🔴 next era $4"
+if [ "$4" = "true" ]
+then
+  echo "! 🟢 -> 😎"
+else
+  echo "! 🔴 -> 😤"
+fi
 #
 # ***** END *****
+
