@@ -1,6 +1,6 @@
 [package]
 name = "scouty"
-version = "0.1.16"
+version = "0.1.17"
 authors = ["Paulo <paulo@turboflakes.io>"]
 description = "Scouty is a command-line interface (CLI) to lead nodes every session" 
 edition = "2018"
