@@ -1,6 +1,6 @@
 [package]
 name = "scouty"
-version = "0.1.17"
+version = "0.1.18"
 authors = ["Paulo <paulo@turboflakes.io>"]
 description = "Scouty is a command-line interface (CLI) to keep an eye on substrate-based chains and hook things up" 
 edition = "2018"
