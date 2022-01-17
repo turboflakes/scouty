@@ -2,5 +2,6 @@
 Cargo.lock
 .env
 bump-version.sh
+/hooks.examples/**/*.json
 /hooks.staging*
 /hooks.production*
