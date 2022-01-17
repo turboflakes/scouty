@@ -199,11 +199,15 @@ To enable **Scouty Bot** you will need to create a specific account on Element o
 
 #### _validator_starts_active_next_era
 
-![crunch bot notification messages example](https://github.com/turboflakes/scouty/blob/main/assets/matrix_validator_starts_active_next_era.png?raw=true)
+<p align="left">
+    <img  style="width: 384px;" src="https://github.com/turboflakes/scouty/blob/main/assets/matrix_validator_starts_active_next_era.png?raw=true">
+</p>
 
 #### _democracy_started
 
-![crunch bot notification messages example](https://github.com/turboflakes/scouty/blob/main/assets/matrix_democracy_started.png?raw=true)
+<p align="left">
+    <img  style="width: 384px;" src="https://github.com/turboflakes/scouty/blob/main/assets/matrix_democracy_started.png?raw=true">
+</p>
 
 ## Usage
 
