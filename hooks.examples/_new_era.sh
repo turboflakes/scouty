@@ -51,6 +51,9 @@
 # echo "! (15th) - Nominators Stake -> ${15}"
 # echo "! -------------------------------"
 #
+# NOTE: this example requires both flags --expose-network --expose-nominators to be present when runing scouty cli
+# /opt/scouty-cli/scouty --config-path /opt/scouty-cli/.env --expose-network --expose-nominators
+#
 # Convert nominators string "stash_1,stash_2" to an array ("stash_1" "stash_2")
 NOMINATORS=(${15//,/ })
 echo "! Total Nominators ${#NOMINATORS[@]}"

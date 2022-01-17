@@ -20,6 +20,24 @@ FILENAME="$(basename $0)"
 
 printf "> $FILENAME $1 $2 \n"
 
+if [ -z "$1" ]
+then
+  printf "! ⚠️ Positional argument 1 not defined \n"
+  printf "! ⚠️ Make sure flags '--expose-network --expose-nominators' are set \n"
+  exit 1;
+else
+  IS_ACTIVE=$1
+fi
+
+if [ -z "$2" ]
+then
+  printf "! ⚠️ Positional argument 2 not defined \n"
+  printf "! ⚠️ Make sure flags '--expose-network --expose-nominators' are set \n"
+  exit 1;
+else
+  NOMINATORS=$2
+fi
+
 for row in $( curl 'https://kusama.w3f.community/nominators' | jq -r '.[] | @base64' ); do
     _jq() {
      echo ${row} | base64 --decode | jq -r ${1}
