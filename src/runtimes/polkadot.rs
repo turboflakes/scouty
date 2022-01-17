@@ -156,44 +156,12 @@ async fn try_init_hook(scouty: &Scouty) -> Result<(), ScoutyError> {
 
     let init = Init { block_number, now };
 
-    // Get Era index
-    let active_era_index = match api.storage().staking().active_era(None).await? {
-        Some(info) => info.index,
-        None => return Err(ScoutyError::Other("Active era not available".into())),
-    };
+    // Collect session data
+    let current_index = api.storage().session().current_index(None).await?;
+    let session = collect_session_data(&scouty, current_index).await?;
 
-    // Get current session
-    let current_session_index = api.storage().session().current_index(None).await?;
-
-    // Get start session index
-    let start_session_index = match api
-        .storage()
-        .staking()
-        .eras_start_session_index(active_era_index, None)
-        .await?
-    {
-        Some(index) => index,
-        None => {
-            return Err(ScoutyError::Other(
-                "Start session index not available".into(),
-            ))
-        }
-    };
-
-    // Eras session index
-    let eras_session_index = 1 + current_session_index - start_session_index;
-
-    // Get session keys queued status
-    let queued_session_keys_changed = api.storage().session().queued_changed(None).await?;
-
-    // Set network info
-    let session = Session {
-        active_era_index: active_era_index,
-        current_session_index: current_session_index,
-        eras_session_index: eras_session_index,
-        queued_session_keys_changed: queued_session_keys_changed,
-    };
-    debug!("session {:?}", session);
+    let network = Network::load(client).await?;
+    debug!("network {:?}", network);
 
     // Collect validators info based on config stashes
     let mut validators = collect_validators_data(&scouty).await?;
@@ -207,27 +175,40 @@ async fn try_init_hook(scouty: &Scouty) -> Result<(), ScoutyError> {
             format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
             v.is_active.to_string(),
             v.is_queued.to_string(),
-            active_era_index.to_string(),
-            current_session_index.to_string(),
-            eras_session_index.to_string(),
+            session.active_era_index.to_string(),
+            session.current_session_index.to_string(),
+            session.eras_session_index.to_string(),
             block_number.to_string(),
         ];
 
+        if config.expose_network {
+            args.push(network.name.to_string());
+            args.push(network.token_symbol.to_string());
+            args.push(network.token_decimals.to_string());
+        }
+
         if config.expose_nominators {
-            let nominators = get_nominators(&scouty, active_era_index, &v.stash).await?;
-            args.push(nominators.join(","));
+            let (total_stake, own_stake, nominators, nominators_stake) =
+                get_nominators(&scouty, session.active_era_index, &v.stash).await?;
+            args.push(total_stake.to_string());
+            args.push(own_stake.to_string());
+            args.push(nominators.join(",").to_string());
+            args.push(
+                nominators_stake
+                    .iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>()
+                    .join(","),
+            );
         }
 
         // Try run hook
-        let hook = Hook::try_run(HOOK_INIT, &config.hook_init_path, args.clone())?;
+        let hook = Hook::try_run(HOOK_INIT, &config.hook_init_path, args)?;
         v.hooks.push(hook);
     }
 
     // Prepare notification report
     debug!("validators {:?}", validators);
-
-    let network = Network::load(client).await?;
-    debug!("network {:?}", network);
 
     let data = RawData {
         init,
@@ -257,21 +238,29 @@ async fn try_run_staking_chilled_hook(
     // Collect validators info based on config stashes
     let mut validators = collect_validators_data(&scouty).await?;
 
-    // Try to run hooks for each stash
+    let network = Network::load(&client).await?;
+    debug!("network {:?}", network);
 
+    // Try to run hooks for each stash
     for v in validators.iter_mut() {
         // Identify if the stash has been chilled
         if event.0 == v.stash {
             v.is_chilled = true;
 
             // Try HOOK_VALIDATOR_CHILLED
-            let args = vec![
+            let mut args = vec![
                 v.stash.to_string(),
                 v.name.to_string(),
                 format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
                 v.is_active.to_string(),
                 v.is_queued.to_string(),
             ];
+
+            if config.expose_network {
+                args.push(network.name.to_string());
+                args.push(network.token_symbol.to_string());
+                args.push(network.token_decimals.to_string());
+            }
 
             // Try run hook
             let hook = Hook::try_run(
@@ -289,9 +278,6 @@ async fn try_run_staking_chilled_hook(
     // NOTE: Only send chilled message if the chilled account is
     // one of the stashes defined in config
     if validators.iter().any(|v| v.is_chilled) {
-        let network = Network::load(&client).await?;
-        debug!("network {:?}", network);
-
         // Prepare notification report
         let data = RawData {
             network,
@@ -320,21 +306,29 @@ async fn try_run_im_online_some_offline_hook(
     // Collect validators info based on config stashes
     let mut validators = collect_validators_data(&scouty).await?;
 
-    // Try to run hooks for each stash
+    let network = Network::load(&client).await?;
+    debug!("network {:?}", network);
 
+    // Try to run hooks for each stash
     for v in validators.iter_mut() {
         for (account_id, _exposure) in event.offline.iter() {
             if account_id == &v.stash {
                 v.is_offline = true;
 
                 // Try HOOK_VALIDATOR_OFFLINE
-                let args = vec![
+                let mut args = vec![
                     v.stash.to_string(),
                     v.name.to_string(),
                     format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
                     v.is_active.to_string(),
                     v.is_queued.to_string(),
                 ];
+
+                if config.expose_network {
+                    args.push(network.name.to_string());
+                    args.push(network.token_symbol.to_string());
+                    args.push(network.token_decimals.to_string());
+                }
 
                 // Try run hook
                 let hook = Hook::try_run(
@@ -353,9 +347,6 @@ async fn try_run_im_online_some_offline_hook(
     // NOTE: Only send offline message if the offline account is
     // one of the stashes defined in config
     if validators.iter().any(|v| v.is_offline) {
-        let network = Network::load(&client).await?;
-        debug!("network {:?}", network);
-
         // Prepare notification report
         let data = RawData {
             network,
@@ -393,11 +384,22 @@ async fn try_run_staking_slashed_hook(
 
     debug!("validators {:?}", validators);
 
+    let network = Network::load(&client).await?;
+    debug!("network {:?}", network);
+
+    let mut args = vec![event.0.to_string(), event.1.to_string()];
+
+    if config.expose_network {
+        args.push(network.name.to_string());
+        args.push(network.token_symbol.to_string());
+        args.push(network.token_decimals.to_string());
+    }
+
     // Try run hook
     let hook = Hook::try_run(
         HOOK_VALIDATOR_SLASHED,
         &config.hook_validator_slashed_path,
-        vec![event.0.to_string(), event.1.to_string()],
+        args.clone(),
     )?;
 
     // Set slash info
@@ -406,9 +408,6 @@ async fn try_run_staking_slashed_hook(
         amount_value: event.1,
         hook: hook,
     };
-
-    let network = Network::load(&client).await?;
-    debug!("network {:?}", network);
 
     // Prepare notification report
     let data = RawData {
@@ -435,14 +434,25 @@ async fn try_run_democracy_started_hook(
     let _api = client.clone().to_runtime_api::<PolkadotApi>();
     let config = CONFIG.clone();
 
+    let network = Network::load(client).await?;
+    debug!("network {:?}", network);
+
+    let mut args = vec![
+        event.ref_index.to_string(),
+        format!("{:?}", event.threshold),
+    ];
+
+    if config.expose_network {
+        args.push(network.name.to_string());
+        args.push(network.token_symbol.to_string());
+        args.push(network.token_decimals.to_string());
+    }
+
     // Try run hook
     let hook = Hook::try_run(
         HOOK_DEMOCRACY_STARTED,
         &config.hook_democracy_started_path,
-        vec![
-            event.ref_index.to_string(),
-            format!("{:?}", event.threshold),
-        ],
+        args.clone(),
     )?;
 
     // Set referendum info
@@ -451,9 +461,6 @@ async fn try_run_democracy_started_hook(
         vote_threshold: format!("{:?}", event.threshold),
         hook,
     };
-
-    let network = Network::load(client).await?;
-    debug!("network {:?}", network);
 
     // Prepare notification report
     let data = RawData {
@@ -476,47 +483,13 @@ async fn try_run_session_hooks(
     event: api::session::events::NewSession,
 ) -> Result<(), ScoutyError> {
     let client = scouty.client();
-    let api = client.clone().to_runtime_api::<PolkadotApi>();
     let config = CONFIG.clone();
 
-    // Get Era index
-    let active_era_index = match api.storage().staking().active_era(None).await? {
-        Some(info) => info.index,
-        None => return Err(ScoutyError::Other("Active era not available".into())),
-    };
+    // Collect session data
+    let session = collect_session_data(&scouty, event.session_index).await?;
 
-    // Get current session
-    let current_session_index = event.session_index;
-
-    // Get start session index
-    let start_session_index = match api
-        .storage()
-        .staking()
-        .eras_start_session_index(active_era_index, None)
-        .await?
-    {
-        Some(index) => index,
-        None => {
-            return Err(ScoutyError::Other(
-                "Start session index not available".into(),
-            ))
-        }
-    };
-
-    // Eras session index
-    let eras_session_index = 1 + current_session_index - start_session_index;
-
-    // Get session keys queued status
-    let queued_session_keys_changed = api.storage().session().queued_changed(None).await?;
-
-    // Set network info
-    let session = Session {
-        active_era_index: active_era_index,
-        current_session_index: current_session_index,
-        eras_session_index: eras_session_index,
-        queued_session_keys_changed: queued_session_keys_changed,
-    };
-    debug!("session {:?}", session);
+    let network = Network::load(client).await?;
+    debug!("network {:?}", network);
 
     // Collect validators info based on config stashes
     let mut validators = collect_validators_data(&scouty).await?;
@@ -530,14 +503,30 @@ async fn try_run_session_hooks(
             format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
             v.is_active.to_string(),
             v.is_queued.to_string(),
-            active_era_index.to_string(),
-            current_session_index.to_string(),
-            eras_session_index.to_string(),
+            session.active_era_index.to_string(),
+            session.current_session_index.to_string(),
+            session.eras_session_index.to_string(),
         ];
 
+        if config.expose_network {
+            args.push(network.name.to_string());
+            args.push(network.token_symbol.to_string());
+            args.push(network.token_decimals.to_string());
+        }
+
         if config.expose_nominators {
-            let nominators = get_nominators(&scouty, active_era_index, &v.stash).await?;
-            args.push(nominators.join(","));
+            let (total_stake, own_stake, nominators, nominators_stake) =
+                get_nominators(&scouty, session.active_era_index, &v.stash).await?;
+            args.push(total_stake.to_string());
+            args.push(own_stake.to_string());
+            args.push(nominators.join(",").to_string());
+            args.push(
+                nominators_stake
+                    .iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>()
+                    .join(","),
+            );
         }
 
         // Try run hook
@@ -549,15 +538,15 @@ async fn try_run_session_hooks(
         v.hooks.push(hook);
 
         // Try HOOK_NEW_ERA
-        if (eras_session_index) == 1 {
+        if (session.eras_session_index) == 1 {
             // Try run hook
             let hook = Hook::try_run(HOOK_NEW_ERA, &config.hook_new_era_path, args.clone())?;
             v.hooks.push(hook);
         }
 
-        if (eras_session_index) == 6 && queued_session_keys_changed {
-            let next_era_index = active_era_index + 1;
-            let next_session_index = current_session_index + 1;
+        if (session.eras_session_index) == 6 && session.queued_session_keys_changed {
+            let next_era_index = session.active_era_index + 1;
+            let next_session_index = session.current_session_index + 1;
             let args = vec![
                 v.stash.to_string(),
                 v.name.to_string(),
@@ -603,9 +592,6 @@ async fn try_run_session_hooks(
     // Prepare notification report
     debug!("validators {:?}", validators);
 
-    let network = Network::load(client).await?;
-    debug!("network {:?}", network);
-
     let data = RawData {
         network,
         session,
@@ -626,7 +612,7 @@ async fn get_nominators(
     scouty: &Scouty,
     era_index: u32,
     stash: &AccountId32,
-) -> Result<Vec<String>, ScoutyError> {
+) -> Result<(u128, u128, Vec<String>, Vec<u128>), ScoutyError> {
     let client = scouty.client().clone();
     let api = client.to_runtime_api::<PolkadotApi>();
 
@@ -635,13 +621,61 @@ async fn get_nominators(
         .staking()
         .eras_stakers(era_index, stash.clone(), None)
         .await?;
-
+    debug!("__exposure: {:?}", exposure);
     let mut nominators: Vec<String> = vec![];
+    let mut nominators_stake: Vec<u128> = vec![];
     for other in exposure.others {
         nominators.push(other.who.to_string());
+        nominators_stake.push(other.value);
     }
 
-    Ok(nominators)
+    Ok((exposure.total, exposure.own, nominators, nominators_stake))
+}
+
+async fn collect_session_data(scouty: &Scouty, session_index: u32) -> Result<Session, ScoutyError> {
+    let client = scouty.client().clone();
+    let api = client.to_runtime_api::<PolkadotApi>();
+
+    // Get Era index
+    let active_era_index = match api.storage().staking().active_era(None).await? {
+        Some(info) => info.index,
+        None => return Err(ScoutyError::Other("Active era not available".into())),
+    };
+
+    // Get current session
+    let current_session_index = session_index;
+
+    // Get start session index
+    let start_session_index = match api
+        .storage()
+        .staking()
+        .eras_start_session_index(active_era_index, None)
+        .await?
+    {
+        Some(index) => index,
+        None => {
+            return Err(ScoutyError::Other(
+                "Start session index not available".into(),
+            ))
+        }
+    };
+
+    // Eras session index
+    let eras_session_index = 1 + current_session_index - start_session_index;
+
+    // Get session keys queued status
+    let queued_session_keys_changed = api.storage().session().queued_changed(None).await?;
+
+    // Set network info
+    let session = Session {
+        active_era_index: active_era_index,
+        current_session_index: current_session_index,
+        eras_session_index: eras_session_index,
+        queued_session_keys_changed: queued_session_keys_changed,
+    };
+    debug!("session {:?}", session);
+
+    Ok(session)
 }
 
 async fn collect_validators_data(scouty: &Scouty) -> Result<Validators, ScoutyError> {

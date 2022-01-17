@@ -15,7 +15,14 @@
 # 9th - Current block
 #
 # The following arguments depend on exposed flags
-# 10th - Nominator stashes [stash_1, stash_2, ..]
+# 10th - Network name (--expose-network flag must be set)
+# 11th - Network token symbol (--expose-network flag must be set)
+# 12th - Network token decimals (--expose-network flag must be set)
+#
+# 13th - Validator Total stake (--expose-nominators flag must be set)
+# 14th - Validator Own stake (--expose-nominators flag must be set)
+# 15th - Nominator stashes [stash_1, stash_2, ..] (--expose-nominators flag must be set)
+# 16th - Nominator stakes [stake_1, stake_2, ..] (--expose-nominators flag must be set)
 #
 # > Special character '!' controls message visibility on Matrix (Element)
 # Any message that starts with '!' will be sent to Matrix, to the user private room
@@ -37,7 +44,13 @@ echo "! 6th - Era -> $6"
 echo "! 7th - Session -> $7"
 echo "! 8th - Eras session index -> $8"
 echo "! 9th - Current block -> $9"
-echo "! (10th) - Nominators (--expose-nominators flag must be set) -> ${10}"
+echo "! (10th) - Network name -> ${10}"
+echo "! (11th) - Network token symbol -> ${11}"
+echo "! (12th) - Network token decimals -> ${12}"
+echo "! (13th) - Validator total stake -> ${13}"
+echo "! (14th) - Validator own stake -> ${14}"
+echo "! (15th) - Nominators -> ${15}"
+echo "! (16th) - Nominators Stake -> ${16}"
 echo "! -------------------------------"
 if [ "$4" = "true" ]
 then

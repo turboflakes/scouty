@@ -26,7 +26,7 @@ for row in $( curl 'https://kusama.w3f.community/nominators' | jq -r '.[] | @bas
     }
     NOMINATOR=$(_jq '.stash')
     if [[ "$2" == *"$NOMINATOR"* ]]; then
-        printf "! 1KV nominator -> $NOMINATOR"
+        printf "! 1KV -> $NOMINATOR"
         exit 0
     fi
 done

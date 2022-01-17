@@ -96,6 +96,8 @@ pub struct Config {
     pub matrix_bot_display_name_disabled: bool,
     // chain settings exposure
     #[serde(default)]
+    pub expose_network: bool,
+    #[serde(default)]
     pub expose_nominators: bool,
 }
 
@@ -187,10 +189,17 @@ fn get_config() -> Config {
         ),
     )
     .arg(
+      Arg::with_name("expose-network")
+        .long("expose-network")
+        .help(
+          "Expose the network name, token symbol and token decimal under new positional arguments for each hook.",
+        ),
+      )
+    .arg(
       Arg::with_name("expose-nominators")
         .long("expose-nominators")
         .help(
-          "Expose the nominators stashes as a new positional argument in hooks. For each validator stash defined `scouty` will look for which nominators are currently backing it.",
+          "Expose the nominator details under new positional arguments for in some hooks. For each validator stash defined `scouty` will look for their active nominators.",
         ),
       )
     .arg(
@@ -369,6 +378,10 @@ fn get_config() -> Config {
             "SCOUTY_HOOK_DEMOCRACY_STARTED_PATH",
             hook_democracy_started_path,
         );
+    }
+
+    if matches.is_present("expose-network") {
+        env::set_var("SCOUTY_EXPOSE_NETWORK", "true");
     }
 
     if matches.is_present("expose-nominators") {

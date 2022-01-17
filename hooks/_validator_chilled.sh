@@ -10,6 +10,11 @@
 # 4th - Is active? (true/false)
 # 5th - Session keys queued? (true/false)
 #
+# The following arguments depend on exposed flags
+# 6th - Network name (--expose-network flag must be set)
+# 7th - Network token symbol (--expose-network flag must be set)
+# 8th - Network token decimals (--expose-network flag must be set)
+#
 # > Special character '!' controls message visibility on Matrix (Element)
 # Any message that starts with '!' will be sent to Matrix, to the user private room
 # 
