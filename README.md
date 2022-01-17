@@ -14,7 +14,7 @@ To monitor, intercept and **extend functionality** as soon as on-chain events ar
 
 To get access to on-chain data and customize messages **written by you** delivered to a matrix **private** room.
 
-To warm up or cool down you validator node resources by knowing when it goes active or inactive within one session.
+To warm up or cool down your validator node resources by knowing when it goes active or inactive within one session.
 
 To **monitor 1KV nominations** and trigger special kudos when your validator becomes independent :)
 
