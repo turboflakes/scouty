@@ -195,6 +195,12 @@ If you set up `scouty` on your server with a matrix user 👉 you get your own S
 
 To enable **Scouty Bot** you will need to create a specific account on Element or similar and copy the values to the respective environment variables `SCOUTY_MATRIX_BOT_USER` and `SCOUTY_MATRIX_BOT_PASSWORD` like in the configuration example file `.env.example`. You may also want to set your regular matrix user to the environment variable `SCOUTY_MATRIX_USER`. So that **Scouty Bot** could create a private room and send in messages. By default **Scouty Bot** will automatically invite your regular matrix user to a private room.
 
+### Scouty Bot hook messages [examples](https://github.com/turboflakes/scouty/tree/main/assets)
+
+#### _validator_starts_active_next_era
+
+![crunch bot notification messages example](https://github.com/turboflakes/scouty/blob/main/assets/matrix_validator_starts_active_next_era.png?raw=true)
+
 ## Usage
 
 Run `--help` to check all `scouty` flags and options.
