@@ -197,16 +197,16 @@ To enable **Scouty Bot** you will need to create a specific account on Element o
 
 ### Scouty Bot hook message [examples](https://github.com/turboflakes/scouty/tree/main/assets)
 
-#### _validator_starts_active_next_era
-
-<p align="left">
-    <img  style="width: 384px;" src="https://github.com/turboflakes/scouty/blob/main/assets/matrix_validator_starts_active_next_era.png?raw=true">
-</p>
-
 #### _democracy_started
 
 <p align="left">
     <img  style="width: 384px;" src="https://github.com/turboflakes/scouty/blob/main/assets/matrix_democracy_started.png?raw=true">
+</p>
+
+#### _validator_starts_active_next_era
+
+<p align="left">
+    <img  style="width: 384px;" src="https://github.com/turboflakes/scouty/blob/main/assets/matrix_validator_starts_active_next_era.png?raw=true">
 </p>
 
 #### _validator_slashed
