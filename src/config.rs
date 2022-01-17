@@ -199,7 +199,7 @@ fn get_config() -> Config {
       Arg::with_name("expose-nominators")
         .long("expose-nominators")
         .help(
-          "Expose the nominator details under new positional arguments for in some hooks. For each validator stash defined `scouty` will look for their active nominators.",
+          "Expose the nominator details under new positional arguments for some of the hooks. Note: `scouty` only look after active nominators for each validator stash predefined.",
         ),
       )
     .arg(

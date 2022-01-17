@@ -7,10 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.18] - 2021-01-17
+
 ### Added 
 
 - add flag `--expose-network` which exposes network properties to all hooks
-- expose total stake, own stake, nominators and nominators stake to some hooks
+
+### Changed
+
+- expose total stake, own stake, nominators and nominators stake to some of the hooks
+- update positional arguments in the default default scripts
 
 ## [0.1.17] - 2021-01-16
 

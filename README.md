@@ -22,7 +22,7 @@ To write **your own bash scripts** and hook them up to any on-chain event suppor
 
 ## Hooks 🪝
 
-`scouty v0.1.17` supports 9 native hooks ready to be explored:
+`scouty v0.1.18` supports 9 native hooks ready to be explored:
 
 - Everytime `scouty` **starts** the following hook is executed ->  [`_init.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_init.sh) (Note: This hook can be used to try out and test new scripts)
 - At every **New Era** the following hook is executed ->  [`_new_era.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_new_era.sh)
@@ -47,7 +47,7 @@ Note: By default every hook is followed by a custom Matrix message. Read [here](
 # create `scouty-cli` directory
 mkdir /opt/scouty-cli
 # download `scouty` binary latest version
-wget -P /scouty-cli https://github.com/turboflakes/scouty/releases/download/v0.1.17/scouty
+wget -P /scouty-cli https://github.com/turboflakes/scouty/releases/download/v0.1.18/scouty
 # make `scouty` binary file executable
 chmod +x /opt/scouty-cli/scouty
 ```
@@ -141,6 +141,7 @@ journalctl -f -u scouty
 
 If you have started scouty by now you should get these warnings in your logs
 ```bash
+WARN  scouty::hooks] Hook script - Scouty initialized - filename (/opt/scouty-cli/hooks/_init.sh) not defined
 WARN  scouty::hooks] Hook script - New session - filename (/opt/scouty-cli/hooks/_new_session.sh) not defined
 WARN  scouty::hooks] Hook script - New era - filename (/opt/scouty-cli/hooks/_new_era.sh) not defined
 WARN  scouty::hooks] Hook script - Validator starts active next era - filename (/opt/scouty-cli/hooks/_validator_starts_active_next_era.sh) not defined
@@ -168,6 +169,7 @@ scp -r ./hooks/* root@IPADDRESS:/opt/scouty-cli/hooks
 And make these hooks executable by running
 
 ```bash
+chmod +x /opt/scouty-cli/hooks/_init.sh
 chmod +x /opt/scouty-cli/hooks/_new_session.sh
 chmod +x /opt/scouty-cli/hooks/_new_era.sh
 chmod +x /opt/scouty-cli/hooks/_validator_starts_active_next_era.sh
@@ -212,9 +214,11 @@ FLAGS:
                                              (https://matrix.org/)
         --disable-matrix-bot-display-name    Disable matrix bot display name update for 'scouty'. (e.g. with this flag
                                              active 'scouty' will not change the matrix bot user display name)
-        --expose-nominators                  Expose the nominators stashes as a new positional argument in hooks. For
-                                             each validator stash defined `scouty` will look for which nominators are
-                                             currently backing it.
+        --expose-network                     Expose the network name, token symbol and token decimal under new
+                                             positional arguments for each hook.
+        --expose-nominators                  Expose the nominator details under new positional arguments for some of the
+                                             hooks. Note: `scouty` only look after active nominators for each validator
+                                             stash predefined.
     -h, --help                               Prints help information
         --short                              Display only essential information (e.g. with this flag active 'scouty'
                                              will hide certain sections in a message)
@@ -227,6 +231,9 @@ OPTIONS:
         --error-interval <error-interval>
             Interval value (in minutes) from which 'scouty' will restart again in case of a critical error. [default:
             30]
+        --hook-init-path <FILE>
+            Sets the path for the script that is called every time `scouty` starts. Here is a good place for try out new
+            things and test new scripts.
         --hook-new-era-path <FILE>
             Sets the path for the script that is called every new era.
 
