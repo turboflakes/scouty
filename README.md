@@ -1,5 +1,9 @@
 # scouty &middot; ![latest release](https://github.com/turboflakes/scouty/actions/workflows/create_release.yml/badge.svg)
 
+<p align="center">
+  <img src="https://github.com/turboflakes/scouty/blob/main/assets/scouty-github-header.png?raw=true">
+</p>
+
 `scouty` is a command-line interface (CLI) to keep an **eye** on substrate-based chains and **hook** things up.
 
 ## Why use `scouty`
