@@ -209,6 +209,12 @@ To enable **Scouty Bot** you will need to create a specific account on Element o
     <img  style="width: 384px;" src="https://github.com/turboflakes/scouty/blob/main/assets/matrix_democracy_started.png?raw=true">
 </p>
 
+#### _validator_slashed
+
+<p align="left">
+    <img  style="width: 384px;" src="https://github.com/turboflakes/scouty/blob/main/assets/matrix_validator_slashed.png?raw=true">
+</p>
+
 ## Usage
 
 Run `--help` to check all `scouty` flags and options.
