@@ -54,7 +54,7 @@ for row in $( cat $NOMINATORS_1KV_RAW_FILENAME | jq -r '.[] | @base64' ); do
     }
     NOMINATOR=$(_jq '.stash')
     if [[ "$NOMINATORS" == *"$NOMINATOR"* ]]; then
-        printf "! 1KV -> $NOMINATOR"
+        printf "! 🎒 <b>1KV</b> $NOMINATOR \n"
         exit 0
     fi
 done

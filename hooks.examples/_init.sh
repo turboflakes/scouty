@@ -61,17 +61,24 @@
 # else
 #   echo "! 🔴 -> 😤"
 # fi
-# Convert nominators string "stash_1,stash_2" to an array ("stash_1" "stash_2")
-NOMINATORS=(${15//,/ })
-echo "! Total Nominators ${#NOMINATORS[@]}"
-# 
-TOTAL_STAKE=$((${13}/(10**${12})))
-echo "! Total Stake $TOTAL_STAKE ${11}"
-OWN_STAKE=$((${14}/(10**${12})))
-echo "! Own Stake $OWN_STAKE ${11}"
-# 
-FILENAME="$(dirname $0)/1kv/check_1kv_nominators.sh"
-$FILENAME $4 ${15}
+if [ "$4" = "true" ]
+then
+  # Nominators and Stake
+  # Convert nominators string "stash_1,stash_2" to an array ("stash_1" "stash_2")
+  NOMINATORS=(${15//,/ })
+  echo "! 🦸 Total Nominators ${#NOMINATORS[@]}" 
+  TOTAL_STAKE=$((${13}/(10**${12})))
+  echo "! 💰 Total Stake $TOTAL_STAKE ${11}"
+  OWN_STAKE=$((${14}/(10**${12})))
+  echo "! 💸 Own Stake $OWN_STAKE ${11}"
+  #
+  # 1kv nominators check
+  FILENAME="$(dirname $0)/1kv/check_1kv_nominators.sh"
+  $FILENAME $4 ${15}
+  #
+  # Authored Blocks
+  echo "! 🍫 Authored blocks ${17}"
+fi
 #
 # ***** END *****
 

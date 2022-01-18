@@ -22,9 +22,9 @@
 use crate::config::CONFIG;
 use crate::errors::ScoutyError;
 use crate::hooks::{
-    Hook, HOOK_INIT, HOOK_NEW_ERA, HOOK_NEW_SESSION,
-    HOOK_VALIDATOR_CHILLED, HOOK_VALIDATOR_OFFLINE, HOOK_VALIDATOR_SLASHED,
-    HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA, HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA,
+    Hook, HOOK_INIT, HOOK_NEW_ERA, HOOK_NEW_SESSION, HOOK_VALIDATOR_CHILLED,
+    HOOK_VALIDATOR_OFFLINE, HOOK_VALIDATOR_SLASHED, HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA,
+    HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA,
 };
 use crate::report::{
     Init, Network, RawData, Report, Section, Session, Slash, Validator, Validators,
@@ -170,6 +170,10 @@ async fn try_init_hook(scouty: &Scouty) -> Result<(), ScoutyError> {
             args.push(network.name.to_string());
             args.push(network.token_symbol.to_string());
             args.push(network.token_decimals.to_string());
+        } else {
+            args.push("-".to_string());
+            args.push("-".to_string());
+            args.push("-".to_string());
         }
 
         if config.expose_nominators {
@@ -185,11 +189,22 @@ async fn try_init_hook(scouty: &Scouty) -> Result<(), ScoutyError> {
                     .collect::<Vec<String>>()
                     .join(","),
             );
+        } else {
+            args.push("-".to_string());
+            args.push("-".to_string());
+            args.push("-".to_string());
+            args.push("-".to_string());
         }
 
         if config.expose_authored_blocks {
-            let authored_blocks = api.storage().im_online().authored_blocks(current_session_index, v.stash.clone(), None).await?;
+            let authored_blocks = api
+                .storage()
+                .im_online()
+                .authored_blocks(current_session_index, v.stash.clone(), None)
+                .await?;
             args.push(authored_blocks.to_string());
+        } else {
+            args.push("-".to_string());
         }
 
         // Try run hook
@@ -451,6 +466,10 @@ async fn try_run_session_hooks(
             args.push(network.name.to_string());
             args.push(network.token_symbol.to_string());
             args.push(network.token_decimals.to_string());
+        } else {
+            args.push("-".to_string());
+            args.push("-".to_string());
+            args.push("-".to_string());
         }
 
         if config.expose_nominators {
@@ -466,11 +485,22 @@ async fn try_run_session_hooks(
                     .collect::<Vec<String>>()
                     .join(","),
             );
+        } else {
+            args.push("-".to_string());
+            args.push("-".to_string());
+            args.push("-".to_string());
+            args.push("-".to_string());
         }
 
         if config.expose_authored_blocks {
-            let authored_blocks = api.storage().im_online().authored_blocks(session.current_session_index, v.stash.clone(), None).await?;
+            let authored_blocks = api
+                .storage()
+                .im_online()
+                .authored_blocks(session.current_session_index, v.stash.clone(), None)
+                .await?;
             args.push(authored_blocks.to_string());
+        } else {
+            args.push("-".to_string());
         }
 
         // Try run hook
