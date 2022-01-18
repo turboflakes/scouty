@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.19] - 2021-01-18
+
+- add flag `--expose-authored-blocks` which exposes the number of blocks authored by the predefined stashes
+
 ## [0.1.18] - 2021-01-17
 
 ### Added 
