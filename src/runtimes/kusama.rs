@@ -527,6 +527,7 @@ async fn try_run_session_hooks(
             session.active_era_index.to_string(),
             session.current_session_index.to_string(),
             session.eras_session_index.to_string(),
+            "-".to_string(), // TODO: TBD -> block number
         ];
 
         if config.expose_network {
