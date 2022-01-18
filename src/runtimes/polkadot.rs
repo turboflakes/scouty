@@ -202,6 +202,11 @@ async fn try_init_hook(scouty: &Scouty) -> Result<(), ScoutyError> {
             );
         }
 
+        if config.expose_authored_blocks {
+            let authored_blocks = api.storage().im_online().authored_blocks(session.current_session_index, v.stash.clone(), None).await?;
+            args.push(authored_blocks.to_string());
+        }
+
         // Try run hook
         let hook = Hook::try_run(HOOK_INIT, &config.hook_init_path, args)?;
         v.hooks.push(hook);
@@ -483,6 +488,7 @@ async fn try_run_session_hooks(
     event: api::session::events::NewSession,
 ) -> Result<(), ScoutyError> {
     let client = scouty.client();
+    let api = client.clone().to_runtime_api::<PolkadotApi>();
     let config = CONFIG.clone();
 
     // Collect session data
@@ -527,6 +533,11 @@ async fn try_run_session_hooks(
                     .collect::<Vec<String>>()
                     .join(","),
             );
+        }
+
+        if config.expose_authored_blocks {
+            let authored_blocks = api.storage().im_online().authored_blocks(session.current_session_index, v.stash.clone(), None).await?;
+            args.push(authored_blocks.to_string());
         }
 
         // Try run hook

@@ -157,8 +157,8 @@ async fn try_init_hook(scouty: &Scouty) -> Result<(), ScoutyError> {
     let init = Init { block_number, now };
 
     // Collect session data
-    let current_index = api.storage().session().current_index(None).await?;
-    let session = collect_session_data(&scouty, current_index).await?;
+    let current_session_index = api.storage().session().current_index(None).await?;
+    let session = collect_session_data(&scouty, current_session_index).await?;
 
     let network = Network::load(client).await?;
     debug!("network {:?}", network);
@@ -200,6 +200,11 @@ async fn try_init_hook(scouty: &Scouty) -> Result<(), ScoutyError> {
                     .collect::<Vec<String>>()
                     .join(","),
             );
+        }
+
+        if config.expose_authored_blocks {
+            let authored_blocks = api.storage().im_online().authored_blocks(current_session_index, v.stash.clone(), None).await?;
+            args.push(authored_blocks.to_string());
         }
 
         // Try run hook
@@ -483,8 +488,9 @@ async fn try_run_session_hooks(
     event: api::session::events::NewSession,
 ) -> Result<(), ScoutyError> {
     let client = scouty.client();
+    let api = client.clone().to_runtime_api::<KusamaApi>();
     let config = CONFIG.clone();
-    
+
     // Collect session data
     let session = collect_session_data(&scouty, event.session_index).await?;
 
@@ -527,6 +533,11 @@ async fn try_run_session_hooks(
                     .collect::<Vec<String>>()
                     .join(","),
             );
+        }
+
+        if config.expose_authored_blocks {
+            let authored_blocks = api.storage().im_online().authored_blocks(session.current_session_index, v.stash.clone(), None).await?;
+            args.push(authored_blocks.to_string());
         }
 
         // Try run hook

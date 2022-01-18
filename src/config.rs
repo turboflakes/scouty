@@ -99,6 +99,8 @@ pub struct Config {
     pub expose_network: bool,
     #[serde(default)]
     pub expose_nominators: bool,
+    #[serde(default)]
+    pub expose_authored_blocks: bool,
 }
 
 /// Inject dotenv and env vars into the Config struct
@@ -202,6 +204,13 @@ fn get_config() -> Config {
           "Expose the nominator details under new positional arguments for some of the hooks. Note: `scouty` only look after active nominators for each validator stash predefined.",
         ),
       )
+    .arg(
+        Arg::with_name("expose-authored-blocks")
+          .long("expose-authored-blocks")
+          .help(
+            "Expose the number of blocks authored by each validator stash predefined.",
+          ),
+        )
     .arg(
         Arg::with_name("hook-init-path")
           .long("hook-init-path")
@@ -386,6 +395,10 @@ fn get_config() -> Config {
 
     if matches.is_present("expose-nominators") {
         env::set_var("SCOUTY_EXPOSE_NOMINATORS", "true");
+    }
+
+    if matches.is_present("expose-authored-blocks") {
+        env::set_var("SCOUTY_EXPOSE_AUTHORED_BLOCKS", "true");
     }
 
     if matches.is_present("disable-matrix") {
