@@ -18,7 +18,7 @@ To warm up or cool down your validator node resources by knowing when it goes ac
 
 To **monitor 1KV nominations** and trigger special kudos when your validator becomes independent :)
 
-To keep up with **Referenda** and vote from your favorite site - *Polkadot.js, Polkassembly, Commonwealth* - through a direct link.
+To keep up with **Referenda** and vote from your favourite site - *Polkadot.js, Polkassembly, Commonwealth* - through a direct link.
 
 To trigger **node backups** every other era and publish them online.
 
