@@ -27,7 +27,7 @@
 DIRNAME="/opt/scouty-cli"
 FILENAME="$DIRNAME/scouty"
 
-read -p "Enter the Scouty version that you would like to download (e.g.: 0.1.21): " INPUT_VERSION
+read -p "Enter the Scouty version that you would like to download (e.g.: 0.1.22): " INPUT_VERSION
 if [ "$INPUT_VERSION" = "" ]; then
                     INPUT_VERSION="0.1.21"
 fi
