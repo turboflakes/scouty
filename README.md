@@ -8,9 +8,9 @@
 
 ## Why use `scouty`
 
-To get **notified** about on-chain events emitted by certain operations linked to *Session*, *Staking*, *ImOnline* and *Democracy* pallets.
+To get **notified** about on-chain events triggered by certain operations linked to *Session*, *Staking*, *ImOnline* and *Democracy* pallets.
 
-To monitor, intercept and **extend functionality** as soon as on-chain events are triggered.
+To monitor, intercept and **extend functionality** as soon as on-chain events are emitted.
 
 To get access to on-chain data and customize messages **written by you** delivered to a matrix **private** room.
 
