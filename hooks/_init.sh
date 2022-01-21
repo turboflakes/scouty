@@ -53,7 +53,8 @@ echo "! (13th) - Validator total stake -> ${13}"
 echo "! (14th) - Validator own stake -> ${14}"
 echo "! (15th) - Nominators -> ${15}"
 echo "! (16th) - Nominators Stake -> ${16}"
-echo "! (17th) - Number of Authored blocks -> ${17}"
+echo "! (17th) - Number of Authored blocks in current Session -> ${17}"
+echo "! (18th) - NA
 echo "! -------------------------------"
 if [ "$4" = "true" ]
 then

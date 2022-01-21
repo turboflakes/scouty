@@ -24,7 +24,8 @@
 # 15th - Nominator stashes [stash_1, stash_2, ..] (--expose-nominators flag must be set)
 # 16th - Nominator stakes [stake_1, stake_2, ..] (--expose-nominators flag must be set)
 #
-# 17th - Number of Authored blocks (--expose-authored-blocks flag must be set)
+# 17th - Number of Authored blocks (Session - 1) (--expose-authored-blocks flag must be set)
+# 18th - Not applicable
 #
 # > Special character '!' controls message visibility on Matrix (Element)
 # Any message that starts with '!' will be sent to Matrix, to the user private room
@@ -53,7 +54,8 @@
 # echo "! (14th) - Validator own stake -> ${14}"
 # echo "! (15th) - Nominators -> ${15}"
 # echo "! (16th) - Nominators Stake -> ${16}"
-# echo "! (17th) - Number of Authored blocks -> ${17}"
+# echo "! (17th) - Number of Authored blocks in current Session -> ${17}"
+# echo "! (18th) - NA
 # echo "! -------------------------------"
 # if [ "$4" = "true" ]
 # then

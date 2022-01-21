@@ -29,7 +29,8 @@ rand = "0.8.4"
 quote = "1.0.10"
 hex = "0.4"
 
-subxt = { package = "subxt", git = "https://github.com/turboflakes/subxt", rev = "41bd8cc" }
+subxt = { package = "subxt", git = "https://github.com/turboflakes/subxt", rev = "bfeefda" }
+
 # Dependencies required since the changes on the new subxt package
 
 codec = { package = "parity-scale-codec", version = "2", default-features = false, features = ["derive", "full", "bit-vec"] }

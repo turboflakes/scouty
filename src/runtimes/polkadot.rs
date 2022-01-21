@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+use crate::authority::AuthorityRecords;
 use crate::config::CONFIG;
 use crate::errors::ScoutyError;
 use crate::hooks::{
@@ -33,10 +34,10 @@ use crate::scouty::Scouty;
 use async_recursion::async_recursion;
 use codec::{Decode, Encode};
 use log::{debug, info};
-use std::{result::Result, str::FromStr};
+use std::{collections::BTreeMap, result::Result, str::FromStr};
 use subxt::{
-    sp_core::hexdisplay::HexDisplay, sp_runtime::AccountId32, DefaultConfig, DefaultExtra,
-    EventSubscription, RawEvent,
+    sp_consensus_babe::AuthorityIndex, sp_core::hexdisplay::HexDisplay, sp_runtime::AccountId32,
+    CustomEventSubscription, DefaultConfig, DefaultExtra, RawEvent,
 };
 
 #[subxt::subxt(
@@ -48,19 +49,24 @@ mod api {}
 pub type PolkadotApi = api::RuntimeApi<DefaultConfig, DefaultExtra<DefaultConfig>>;
 
 pub async fn init_and_subscribe_on_chain_events(scouty: &Scouty) -> Result<(), ScoutyError> {
+    let client = scouty.client();
+
+    // Initialize authority records
+    let mut records = BTreeMap::new();
+    let mut authority_records = AuthorityRecords::new(&mut records);
+    init_authority_records(&scouty, &mut authority_records).await?;
+
     // Start by calling init hook
-    try_init_hook(&scouty).await?;
+    try_init_hook(&scouty, &authority_records).await?;
     //
     info!("Subscribe on-chain finalized events");
-    let client = scouty.client().clone();
-    let sub = client.rpc().subscribe_finalized_events().await?;
+    let sub = client.rpc().subscribe_finalized_events_with_block().await?;
     let decoder = client.events_decoder();
-    let mut sub = EventSubscription::<DefaultConfig>::new(sub, &decoder);
-    // TODO: perhaps we can have a filtered events Vec inside subxt
-    // sub.filter_event::<api::session::events::NewSession>();
+    let mut sub = CustomEventSubscription::<DefaultConfig>::new(sub, &decoder);
     while let Some(result) = sub.next().await {
-        if let Ok(raw) = result {
-            match raw {
+        if let Ok((block_number, authority, raw_event)) = result {
+            // Match Events
+            match raw_event {
                 RawEvent {
                     ref pallet,
                     ref variant,
@@ -71,7 +77,7 @@ pub async fn init_and_subscribe_on_chain_events(scouty: &Scouty) -> Result<(), S
                     match api::session::events::NewSession::decode(&mut &data[..]) {
                         Ok(event) => {
                             info!("Successfully decoded event {:?}", event);
-                            try_run_session_hooks(&scouty, event).await?;
+                            try_run_session_hooks(&scouty, event, &mut authority_records, block_number, authority).await?;
                         }
                         Err(e) => return Err(ScoutyError::CodecError(e)),
                     };
@@ -138,13 +144,18 @@ pub async fn init_and_subscribe_on_chain_events(scouty: &Scouty) -> Result<(), S
                 }
                 _ => (),
             }
+            // Track authority record
+            authority_records.insert_record(block_number, authority)?;
         }
     }
     // If subscription has closed for some reason await and subscribe again
     Err(ScoutyError::SubscriptionFinished)
 }
 
-async fn try_init_hook(scouty: &Scouty) -> Result<(), ScoutyError> {
+async fn try_init_hook(
+    scouty: &Scouty,
+    authority_records: &AuthorityRecords<'_>,
+) -> Result<(), ScoutyError> {
     let client = scouty.client();
     let api = client.clone().to_runtime_api::<PolkadotApi>();
     let config = CONFIG.clone();
@@ -157,8 +168,8 @@ async fn try_init_hook(scouty: &Scouty) -> Result<(), ScoutyError> {
     let init = Init { block_number, now };
 
     // Collect session data
-    let current_index = api.storage().session().current_index(None).await?;
-    let session = collect_session_data(&scouty, current_index).await?;
+    let current_session_index = api.storage().session().current_index(None).await?;
+    let session = collect_session_data(&scouty, current_session_index).await?;
 
     let network = Network::load(client).await?;
     debug!("network {:?}", network);
@@ -212,13 +223,11 @@ async fn try_init_hook(scouty: &Scouty) -> Result<(), ScoutyError> {
         }
 
         if config.expose_authored_blocks {
-            let authored_blocks = api
-                .storage()
-                .im_online()
-                .authored_blocks(session.current_session_index, v.stash.clone(), None)
-                .await?;
-            args.push(authored_blocks.to_string());
+            let current_session_total = authority_records.current_session_total(&v.stash);
+            args.push(current_session_total.to_string());
+            args.push("-".to_string());
         } else {
+            args.push("-".to_string());
             args.push("-".to_string());
         }
 
@@ -501,6 +510,9 @@ async fn try_run_democracy_started_hook(
 async fn try_run_session_hooks(
     scouty: &Scouty,
     event: api::session::events::NewSession,
+    authority_records: &mut AuthorityRecords<'_>,
+    block_number: u32,
+    authority: Option<AuthorityIndex>,
 ) -> Result<(), ScoutyError> {
     let client = scouty.client();
     let api = client.clone().to_runtime_api::<PolkadotApi>();
@@ -508,6 +520,18 @@ async fn try_run_session_hooks(
 
     // Collect session data
     let session = collect_session_data(&scouty, event.session_index).await?;
+
+    // Authority records -->
+    // Set authority_records a new authority set on new era
+    if (session.eras_session_index) == 1 {
+        // Get current active authorities
+        authority_records.set_authorities(api.storage().session().validators(None).await?);
+    }
+    // Set authority_records a new session
+    authority_records.set_session(session.current_session_index);
+    // Track authority record with the new session updated
+    authority_records.insert_record(block_number, authority)?;
+    // Authority records --<
 
     let network = Network::load(client).await?;
     debug!("network {:?}", network);
@@ -561,13 +585,13 @@ async fn try_run_session_hooks(
         }
 
         if config.expose_authored_blocks {
-            let authored_blocks = api
-                .storage()
-                .im_online()
-                .authored_blocks(session.current_session_index, v.stash.clone(), None)
-                .await?;
-            args.push(authored_blocks.to_string());
+            let previous_session_total = authority_records.previous_session_total(&v.stash);
+            let previous_six_sessions_total =
+                authority_records.previous_six_sessions_total(&v.stash);
+            args.push(previous_session_total.to_string());
+            args.push(previous_six_sessions_total.to_string());
         } else {
+            args.push("-".to_string());
             args.push("-".to_string());
         }
 
@@ -845,4 +869,32 @@ fn parse_identity_data(data: api::runtime_types::pallet_identity::types::Data) -
 
 fn str(bytes: Vec<u8>) -> String {
     format!("{}", String::from_utf8(bytes).expect("Identity not utf-8"))
+}
+
+async fn init_authority_records<'a>(
+    scouty: &Scouty,
+    authority_records: &mut AuthorityRecords<'a>,
+) -> Result<(), ScoutyError> {
+    let client = scouty.client();
+    let api = client.clone().to_runtime_api::<PolkadotApi>();
+    let config = CONFIG.clone();
+    // Get current block
+    authority_records.set_block(api.storage().system().number(None).await?);
+    // Get current session
+    let current_session_index = api.storage().session().current_index(None).await?;
+    authority_records.set_session(current_session_index);
+    // Get current active authorities
+    authority_records.set_authorities(api.storage().session().validators(None).await?);
+    // Get blocks authored for each stash
+    for stash_str in config.stashes.iter() {
+        let stash = AccountId32::from_str(stash_str)?;
+        let key = format!("{}:{}", current_session_index, stash);
+        let blocks = api
+            .storage()
+            .im_online()
+            .authored_blocks(current_session_index, stash.clone(), None)
+            .await?;
+        authority_records.records.insert(key, blocks);
+    }
+    Ok(())
 }
