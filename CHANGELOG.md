@@ -7,11 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.23] - 2021-01-22
+
+### Added
+
+- Total authored blocks from previous 6 sessions
+
+### Changed
+
+- Fix Authored blocks
+
 ## [0.1.22] - 2021-01-18
 
 ### Changed
 
-- fix TBD argument at new session and new era hook scripts
+- Fix TBD argument at new session and new era hook scripts
 
 ## [0.1.21] - 2021-01-18
 
