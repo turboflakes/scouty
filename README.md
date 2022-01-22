@@ -26,7 +26,7 @@ To write **your own bash scripts** and hook them up to any on-chain event suppor
 
 ## Hooks 🪝
 
-`scouty v0.1.22` supports 9 native hooks ready to be explored:
+`scouty v0.1.23` supports 9 native hooks ready to be explored:
 
 - Everytime `scouty` **starts** the following hook is executed ->  [`_init.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_init.sh) (Note: This hook can be used to try out and test new scripts)
 - At every **New Era** the following hook is executed ->  [`_new_era.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_new_era.sh)
@@ -51,7 +51,7 @@ Note: By default every hook is followed by a custom Matrix message. Read [here](
 # create `scouty-cli` directory
 mkdir /opt/scouty-cli
 # download `scouty` binary latest version
-wget -P /scouty-cli https://github.com/turboflakes/scouty/releases/download/v0.1.22/scouty
+wget -P /scouty-cli https://github.com/turboflakes/scouty/releases/download/v0.1.23/scouty
 # make `scouty` binary file executable
 chmod +x /opt/scouty-cli/scouty
 ```
@@ -84,7 +84,7 @@ SCOUTY_STASHES=5GTD7ZeD823BjpmZBCSzBQp7cvHR1Gunq7oDkurZr9zUev2n
 # [SCOUTY_SUBSTRATE_WS_URL] Substrate websocket endpoint for which 'scouty' will try to
 # connect. (e.g. wss://kusama-rpc.polkadot.io) (NOTE: substrate_ws_url takes precedence
 # than <CHAIN> argument) 
-SCOUTY_SUBSTRATE_WS_URL=wss://localhost:9944
+SCOUTY_SUBSTRATE_WS_URL=ws://localhost:9944
 #SCOUTY_SUBSTRATE_WS_URL=wss://westend-rpc.polkadot.io:443
 #
 # Hooks configuration bash script filenames
