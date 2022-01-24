@@ -27,6 +27,8 @@
 # 17th - Number of Authored blocks in previous Session (--expose-authored-blocks flag must be set)
 # 18th - Number of Authored blocks in previous 6 Sessions (--expose-authored-blocks flag must be set)
 #
+# 19th - Total Nominator stashes [stash_1, stash_2, ..] (--expose-total-nominators flag must be set)
+#
 # > Special character '!' controls message visibility on Matrix (Element)
 # Any message that starts with '!' will be sent to Matrix, to the user private room
 # 
@@ -56,6 +58,7 @@
 # echo "! (16th) - Nominators Stake -> ${16}"
 # echo "! (17th) - Number of Authored blocks in previous Session -> ${17}"
 # echo "! (18th) - Number of Authored blocks in previous 6 Sessions -> ${18}"
+# echo "! (19th) - Total Nominators -> ${19}"
 # echo "! -------------------------------"
 #
 # NOTE: this example requires the following flags to be present when runing scouty cli
@@ -66,19 +69,27 @@ then
   # Nominators and Stake
   # Convert nominators string "stash_1,stash_2" to an array ("stash_1" "stash_2")
   NOMINATORS=(${15//,/ })
-  echo "! 🦸 Total Nominators ${#NOMINATORS[@]}" 
-  TOTAL_STAKE=$((${13}/(10**${12})))
-  echo "! 💸 Total Stake $TOTAL_STAKE ${11}"
+  TOTAL_NOMINATORS=(${19//,/ })
+  echo "! 🦸 Nominators ${#NOMINATORS[@]}/${#TOTAL_NOMINATORS[@]}"
+  TOTAL_ACTIVE_STAKE=$((${13}/(10**${12})))
+  echo "! 💰 Total Active Stake $TOTAL_ACTIVE_STAKE ${11}"
   OWN_STAKE=$((${14}/(10**${12})))
-  echo "! 💰 Own Stake $OWN_STAKE ${11}"
+  echo "! 💸 Own Stake $OWN_STAKE ${11}"
+   # Authored Blocks
+  echo "! 🍫 Authored blocks ${17}/${18}"
   #
   # 1kv nominators check
   FILENAME="$(dirname $0)/1kv/check_1kv_nominators.sh"
-  $FILENAME $4 ${15}
+  $FILENAME $4 ${15} ${19}
   #
-  # Authored Blocks
-  echo "! 🍫 Authored blocks ${17}"
-  echo "! 🍫🍫 (6x) Authored blocks ${18}"
+else 
+  # Nominators and Stake
+  TOTAL_NOMINATORS=(${19//,/ })
+  echo "! 🦸 Nominators 0/${#TOTAL_NOMINATORS[@]}"
+  #
+  # 1kv nominators check
+  FILENAME="$(dirname $0)/1kv/check_1kv_nominators.sh"
+  $FILENAME $4 "-" ${19}
 fi
 #
 # ***** END *****

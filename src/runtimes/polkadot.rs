@@ -30,7 +30,7 @@ use crate::hooks::{
 use crate::report::{
     Init, Network, RawData, Referendum, Report, Section, Session, Slash, Validator, Validators,
 };
-use crate::scouty::Scouty;
+use crate::scouty::{get_account_id_from_storage_key, Scouty};
 use async_recursion::async_recursion;
 use codec::{Decode, Encode};
 use log::{debug, info};
@@ -77,7 +77,14 @@ pub async fn init_and_subscribe_on_chain_events(scouty: &Scouty) -> Result<(), S
                     match api::session::events::NewSession::decode(&mut &data[..]) {
                         Ok(event) => {
                             info!("Successfully decoded event {:?}", event);
-                            try_run_session_hooks(&scouty, event, &mut authority_records, block_number, authority).await?;
+                            try_run_session_hooks(
+                                &scouty,
+                                event,
+                                &mut authority_records,
+                                block_number,
+                                authority,
+                            )
+                            .await?;
                         }
                         Err(e) => return Err(ScoutyError::CodecError(e)),
                     };
@@ -174,6 +181,13 @@ async fn try_init_hook(
     let network = Network::load(client).await?;
     debug!("network {:?}", network);
 
+    // Sync total nominators
+    let total_nominators_map = if config.expose_total_nominators || config.expose_all {
+        get_nominators(&scouty).await?
+    } else {
+        BTreeMap::new()
+    };
+
     // Collect validators info based on config stashes
     let mut validators = collect_validators_data(&scouty).await?;
 
@@ -192,7 +206,7 @@ async fn try_init_hook(
             block_number.to_string(),
         ];
 
-        if config.expose_network {
+        if config.expose_network || config.expose_all {
             args.push(network.name.to_string());
             args.push(network.token_symbol.to_string());
             args.push(network.token_decimals.to_string());
@@ -202,14 +216,14 @@ async fn try_init_hook(
             args.push("-".to_string());
         }
 
-        if config.expose_nominators {
-            let (total_stake, own_stake, nominators, nominators_stake) =
-                get_nominators(&scouty, session.active_era_index, &v.stash).await?;
-            args.push(total_stake.to_string());
+        if config.expose_nominators || config.expose_all {
+            let (total_active_stake, own_stake, active_nominators, active_nominators_stake) =
+                get_active_nominators(&scouty, session.active_era_index, &v.stash).await?;
+            args.push(total_active_stake.to_string());
             args.push(own_stake.to_string());
-            args.push(nominators.join(",").to_string());
+            args.push(active_nominators.join(",").to_string());
             args.push(
-                nominators_stake
+                active_nominators_stake
                     .iter()
                     .map(|x| x.to_string())
                     .collect::<Vec<String>>()
@@ -222,12 +236,20 @@ async fn try_init_hook(
             args.push("-".to_string());
         }
 
-        if config.expose_authored_blocks {
+        if config.expose_authored_blocks || config.expose_all {
             let current_session_total = authority_records.current_session_total(&v.stash);
             args.push(current_session_total.to_string());
             args.push("-".to_string());
         } else {
             args.push("-".to_string());
+            args.push("-".to_string());
+        }
+
+        if config.expose_total_nominators || config.expose_all {
+            if let Some(total_nominators) = total_nominators_map.get(&v.stash.to_string()) {
+                args.push(total_nominators.join(",").to_string());
+            }
+        } else {
             args.push("-".to_string());
         }
 
@@ -285,10 +307,14 @@ async fn try_run_staking_chilled_hook(
                 v.is_queued.to_string(),
             ];
 
-            if config.expose_network {
+            if config.expose_network || config.expose_all {
                 args.push(network.name.to_string());
                 args.push(network.token_symbol.to_string());
                 args.push(network.token_decimals.to_string());
+            } else {
+                args.push("-".to_string());
+                args.push("-".to_string());
+                args.push("-".to_string());
             }
 
             // Try run hook
@@ -353,10 +379,14 @@ async fn try_run_im_online_some_offline_hook(
                     v.is_queued.to_string(),
                 ];
 
-                if config.expose_network {
+                if config.expose_network || config.expose_all {
                     args.push(network.name.to_string());
                     args.push(network.token_symbol.to_string());
                     args.push(network.token_decimals.to_string());
+                } else {
+                    args.push("-".to_string());
+                    args.push("-".to_string());
+                    args.push("-".to_string());
                 }
 
                 // Try run hook
@@ -418,10 +448,14 @@ async fn try_run_staking_slashed_hook(
 
     let mut args = vec![event.0.to_string(), event.1.to_string()];
 
-    if config.expose_network {
+    if config.expose_network || config.expose_all {
         args.push(network.name.to_string());
         args.push(network.token_symbol.to_string());
         args.push(network.token_decimals.to_string());
+    } else {
+        args.push("-".to_string());
+        args.push("-".to_string());
+        args.push("-".to_string());
     }
 
     // Try run hook
@@ -471,10 +505,14 @@ async fn try_run_democracy_started_hook(
         format!("{:?}", event.threshold),
     ];
 
-    if config.expose_network {
+    if config.expose_network || config.expose_all {
         args.push(network.name.to_string());
         args.push(network.token_symbol.to_string());
         args.push(network.token_decimals.to_string());
+    } else {
+        args.push("-".to_string());
+        args.push("-".to_string());
+        args.push("-".to_string());
     }
 
     // Try run hook
@@ -536,6 +574,13 @@ async fn try_run_session_hooks(
     let network = Network::load(client).await?;
     debug!("network {:?}", network);
 
+    // Sync total nominators
+    let total_nominators_map = if config.expose_total_nominators || config.expose_all {
+        get_nominators(&scouty).await?
+    } else {
+        BTreeMap::new()
+    };
+
     // Collect validators info based on config stashes
     let mut validators = collect_validators_data(&scouty).await?;
 
@@ -554,7 +599,7 @@ async fn try_run_session_hooks(
             "-".to_string(), // TODO: TBD -> block number
         ];
 
-        if config.expose_network {
+        if config.expose_network || config.expose_all {
             args.push(network.name.to_string());
             args.push(network.token_symbol.to_string());
             args.push(network.token_decimals.to_string());
@@ -564,9 +609,9 @@ async fn try_run_session_hooks(
             args.push("-".to_string());
         }
 
-        if config.expose_nominators {
+        if config.expose_nominators || config.expose_all {
             let (total_stake, own_stake, nominators, nominators_stake) =
-                get_nominators(&scouty, session.active_era_index, &v.stash).await?;
+                get_active_nominators(&scouty, session.active_era_index, &v.stash).await?;
             args.push(total_stake.to_string());
             args.push(own_stake.to_string());
             args.push(nominators.join(",").to_string());
@@ -584,7 +629,7 @@ async fn try_run_session_hooks(
             args.push("-".to_string());
         }
 
-        if config.expose_authored_blocks {
+        if config.expose_authored_blocks || config.expose_all {
             let previous_session_total = authority_records.previous_session_total(&v.stash);
             let previous_six_sessions_total =
                 authority_records.previous_six_sessions_total(&v.stash);
@@ -592,6 +637,14 @@ async fn try_run_session_hooks(
             args.push(previous_six_sessions_total.to_string());
         } else {
             args.push("-".to_string());
+            args.push("-".to_string());
+        }
+
+        if config.expose_total_nominators || config.expose_all {
+            if let Some(total_nominators) = total_nominators_map.get(&v.stash.to_string()) {
+                args.push(total_nominators.join(",").to_string());
+            }
+        } else {
             args.push("-".to_string());
         }
 
@@ -674,7 +727,7 @@ async fn try_run_session_hooks(
     Ok(())
 }
 
-async fn get_nominators(
+async fn get_active_nominators(
     scouty: &Scouty,
     era_index: u32,
     stash: &AccountId32,
@@ -696,6 +749,40 @@ async fn get_nominators(
     }
 
     Ok((exposure.total, exposure.own, nominators, nominators_stake))
+}
+
+async fn get_nominators(scouty: &Scouty) -> Result<BTreeMap<String, Vec<String>>, ScoutyError> {
+    let client = scouty.client().clone();
+    let api = client.to_runtime_api::<PolkadotApi>();
+    let config = CONFIG.clone();
+
+    let mut stashes_nominators: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for stash in config.stashes.iter() {
+        stashes_nominators.insert(stash.to_string(), vec![]);
+    }
+
+    info!("Starting Total Nominators - sync");
+    let mut nominators = api.storage().staking().nominators_iter(None).await?;
+    while let Some((key, nominations)) = nominators.next().await? {
+        let nominator_stash = get_account_id_from_storage_key(key);
+        if let Some(_controller) = api
+            .storage()
+            .staking()
+            .bonded(nominator_stash.clone(), None)
+            .await?
+        {
+            for stash_str in config.stashes.iter() {
+                let stash = AccountId32::from_str(stash_str)?;
+                if nominations.targets.contains(&stash) {
+                    if let Some(x) = stashes_nominators.get_mut(stash_str) {
+                        x.push(nominator_stash.to_string());
+                    }
+                }
+            }
+        }
+    }
+    info!("Finished Total Nominators - sync");
+    Ok(stashes_nominators)
 }
 
 async fn collect_session_data(scouty: &Scouty, session_index: u32) -> Result<Session, ScoutyError> {

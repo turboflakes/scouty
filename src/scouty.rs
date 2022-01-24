@@ -36,7 +36,10 @@ use crate::runtimes::{
 use async_std::task;
 use log::{error, info, warn};
 use std::{convert::TryInto, result::Result, thread, time};
-use subxt::{sp_core::crypto, Client, ClientBuilder, DefaultConfig};
+use subxt::{
+    sp_core::crypto, sp_core::storage::StorageKey, sp_runtime::AccountId32, Client, ClientBuilder,
+    DefaultConfig,
+};
 
 pub async fn create_substrate_node_client(
     config: Config,
@@ -198,4 +201,10 @@ fn spawn_and_restart_subscription_on_error() {
         }
     });
     task::block_on(t);
+}
+
+pub fn get_account_id_from_storage_key(key: StorageKey) -> AccountId32 {
+    let s = &key.0[key.0.len() - 32..];
+    let v: [u8; 32] = s.try_into().expect("slice with incorrect length");
+    AccountId32::new(v)
 }

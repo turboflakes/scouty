@@ -101,6 +101,10 @@ pub struct Config {
     pub expose_nominators: bool,
     #[serde(default)]
     pub expose_authored_blocks: bool,
+    #[serde(default)]
+    pub expose_total_nominators: bool,
+    #[serde(default)]
+    pub expose_all: bool,
 }
 
 /// Inject dotenv and env vars into the Config struct
@@ -211,6 +215,20 @@ fn get_config() -> Config {
             "Expose the number of blocks authored by each validator stash predefined.",
           ),
         )
+    .arg(
+      Arg::with_name("expose-total-nominators")
+        .long("expose-total-nominators")
+        .help(
+          "Expose the total nominator details under new positional arguments for some of the hooks. Note: `scouty` only look after total nominators for each validator stash predefined.",
+        ),
+      )
+    .arg(
+      Arg::with_name("expose-all")
+        .long("expose-all")
+        .help(
+          "Expose all positional arguments for some of the hooks. Note: Each hook bash script describes which data is available through the positional arguments.",
+        ),
+      )
     .arg(
         Arg::with_name("hook-init-path")
           .long("hook-init-path")
@@ -389,6 +407,10 @@ fn get_config() -> Config {
         );
     }
 
+    if matches.is_present("expose-all") {
+        env::set_var("SCOUTY_EXPOSE_ALL", "true");
+    }
+
     if matches.is_present("expose-network") {
         env::set_var("SCOUTY_EXPOSE_NETWORK", "true");
     }
@@ -399,6 +421,14 @@ fn get_config() -> Config {
 
     if matches.is_present("expose-authored-blocks") {
         env::set_var("SCOUTY_EXPOSE_AUTHORED_BLOCKS", "true");
+    }
+
+    if matches.is_present("expose-total-nominators") {
+        env::set_var("SCOUTY_EXPOSE_TOTAL_NOMINATORS", "true");
+    }
+
+    if matches.is_present("expose-all") {
+        env::set_var("SCOUTY_EXPOSE_ALL", "true");
     }
 
     if matches.is_present("disable-matrix") {
