@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Expose Total Nominators under a new flag `--expose-total-nominators`
+- Add new flag `--expose-all` to expose all positional arguments in scripts using only a single flag
+
+### Changed
+
+- Review sripts to fit total nominators and give a better readability
+
 ## [0.1.23] - 2021-01-22
 
 ### Added
