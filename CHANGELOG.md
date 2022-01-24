@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Review sripts to fit total nominators and give a better readability
+- Update metadata Polkadot runtime/9151
 
 ## [0.1.23] - 2021-01-22
 
