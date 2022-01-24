@@ -217,6 +217,31 @@ To enable **Scouty Bot** you will need to create a specific account on Element o
 
 ## Usage
 
+If you have been following the configuration as described in previous steps (assuming `.env` defined inside `/opt/scouty-cli` folder), run `scouty` when `/opt/scouty-cli` folder is your current working directory. Otherwise you will have to specify `.env` custom path with the option `--config-path`
+
+```
+#!/bin/bash
+# set /opt/scouty-cli your current working directory
+cd /opt/scouty-cli
+```
+
+By default `scouty` tries to connect to your local substrate node on the default websocket port `ws://127.0.0.1:9944`. This can be changed by typing one of polkadot main chains - westend, kusama or polkadot. Or by changing the substrate websocket url with the option `--substrate-ws-url`
+
+If all correctly set, `scouty` should be good to go:
+
+```
+#!/bin/bash
+# if running a local node than simple run scouty with default options
+# by default scouty will try to connect to ws://localhost:9944
+scouty
+# or be specific to which network scouty will try to connect
+scouty kusama
+# granular specify which data should be available in hooks
+scouty kusama --expose-nominators
+# or expose all data supported by scouty in hooks with a single flag
+scouty kusama --expose-nominators
+```
+
 Run `--help` to check all `scouty` flags and options.
 
 Note: All flags and options are also available through environment variables if defined in `.env` configuration file. You can choose which way you want to configure `scouty`. Take in consideration that if the same variable is defined on both sides e.g. defined in `.env` and through CLI flag/option, `scouty` will take the value defined by CLI.
