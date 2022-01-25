@@ -63,11 +63,12 @@ for row in $( cat $NOMINATORS_1KV_RAW_FILENAME | jq -r '.[] | @base64' ); do
      echo ${row} | base64 --decode | jq -r ${1}
     }
     NOMINATOR=$(_jq '.stash')
+    NOMINATOR_LEN=${#NOMINATOR}
     if [[ "$NOMINATORS" == *"$NOMINATOR"* ]]; then
-        printf "! 🎒 ${NOMINATOR:0:16}.. 🟢 \n"
+        printf "! 🎒 ${NOMINATOR:0:6}...${NOMINATOR:NOMINATOR_LEN-6:NOMINATOR_LEN} 🟢 \n"
         IS_1KV_NOMINATOR_BACKING="true"
     elif [[ "$TOTAL_NOMINATORS" == *"$NOMINATOR"* ]]; then
-        printf "! 🎒 ${NOMINATOR:0:16}.. 🔴 \n"
+        printf "! 🎒 ${NOMINATOR:0:6}...${NOMINATOR:NOMINATOR_LEN-6:NOMINATOR_LEN} 🔴 \n"
         IS_1KV_NOMINATOR_BACKING="true"
     fi
 done
