@@ -24,6 +24,7 @@ mod config;
 mod errors;
 mod hooks;
 mod matrix;
+mod para;
 mod report;
 mod runtimes;
 mod scouty;

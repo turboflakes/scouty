@@ -28,6 +28,10 @@
 # 18th - Not applicable
 #
 # 19th - Total Nominators stashes [stash_1, stash_2, ..] (--expose-total-nominators flag must be set)
+# 20th - Not applicable
+#
+# 21th - Is Para validator? (true/false) (--expose-para-validator flag must be set)
+# 22th - Number of Para validator times in previous 6 Sessions (--expose-para-validator flag must be set)
 #
 # > Special character '!' controls message visibility on Matrix (Element)
 # Any message that starts with '!' will be sent to Matrix, to the user private room
@@ -59,6 +63,9 @@
 # echo "! (17th) - Number of Authored blocks in current Session -> ${17}"
 # echo "! (18th) - NA"
 # echo "! (19th) - Total Nominators -> ${19}"
+# echo "! (20th) - NA"
+# echo "! (21th) - Is Para Validator? -> ${21}"
+# echo "! (22th) - Number of Para Validator times in previous 6 Sessions -> ${22}"
 # echo "! -------------------------------"
 # if [ "$4" = "true" ]
 # then
@@ -74,11 +81,18 @@ then
   TOTAL_NOMINATORS=(${19//,/ })
   echo "! 🦸 Nominators ${#NOMINATORS[@]}/${#TOTAL_NOMINATORS[@]}"
   TOTAL_ACTIVE_STAKE=$((${13}/(10**${12})))
-  echo "! 💰 Total Active Stake $TOTAL_ACTIVE_STAKE ${11}"
+  echo "! 💸 Active stake $TOTAL_ACTIVE_STAKE ${11}"
   OWN_STAKE=$((${14}/(10**${12})))
-  echo "! 💸 Own Stake $OWN_STAKE ${11}"
-   # Authored Blocks
-  echo "! 🍫 Authored blocks ${17}"
+  echo "! 💰 Own stake $OWN_STAKE ${11}"
+  # Last authored blocks
+  echo "! 📦 Last authored blocks ${17}"
+  # Para Validator
+  if [ "${21}" = "true" ]
+  then
+    echo "! 🪂 Para validator ✔️"
+  else
+    echo "! 🪂 Para validator ❌"
+  fi
   #
   # 1kv nominators check
   FILENAME="$(dirname $0)/1kv/check_1kv_nominators.sh"

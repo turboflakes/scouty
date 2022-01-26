@@ -104,6 +104,8 @@ pub struct Config {
     #[serde(default)]
     pub expose_total_nominators: bool,
     #[serde(default)]
+    pub expose_para_validator: bool,
+    #[serde(default)]
     pub expose_all: bool,
 }
 
@@ -223,6 +225,13 @@ fn get_config() -> Config {
         ),
       )
     .arg(
+      Arg::with_name("expose-para-validator")
+        .long("expose-para-validator")
+        .help(
+          "Expose the para validator details under new positional arguments for some of the hooks. Note: `scouty` only look after total nominators for each validator stash predefined.",
+        ),
+      )
+    .arg(
       Arg::with_name("expose-all")
         .long("expose-all")
         .help(
@@ -318,10 +327,16 @@ fn get_config() -> Config {
 
     match matches.value_of("CHAIN") {
         Some("westend") => {
-            env::set_var("SCOUTY_SUBSTRATE_WS_URL", "wss://westend-rpc.polkadot.io:443");
+            env::set_var(
+                "SCOUTY_SUBSTRATE_WS_URL",
+                "wss://westend-rpc.polkadot.io:443",
+            );
         }
         Some("kusama") => {
-            env::set_var("SCOUTY_SUBSTRATE_WS_URL", "wss://kusama-rpc.polkadot.io:443");
+            env::set_var(
+                "SCOUTY_SUBSTRATE_WS_URL",
+                "wss://kusama-rpc.polkadot.io:443",
+            );
         }
         Some("polkadot") => {
             env::set_var("SCOUTY_SUBSTRATE_WS_URL", "wss://rpc.polkadot.io:443");
@@ -425,6 +440,10 @@ fn get_config() -> Config {
 
     if matches.is_present("expose-total-nominators") {
         env::set_var("SCOUTY_EXPOSE_TOTAL_NOMINATORS", "true");
+    }
+
+    if matches.is_present("expose-para-validator") {
+        env::set_var("SCOUTY_EXPOSE_PARA_VALIDATOR", "true");
     }
 
     if matches.is_present("expose-all") {

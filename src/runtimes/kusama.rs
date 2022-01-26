@@ -27,6 +27,7 @@ use crate::hooks::{
     HOOK_VALIDATOR_CHILLED, HOOK_VALIDATOR_OFFLINE, HOOK_VALIDATOR_SLASHED,
     HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA, HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA,
 };
+use crate::para::ParaRecords;
 use crate::report::{
     Init, Network, RawData, Referendum, Report, Section, Session, Slash, Validator, Validators,
 };
@@ -42,7 +43,7 @@ use subxt::{
 
 #[subxt::subxt(
     runtime_metadata_path = "metadata/kusama_metadata.scale",
-    generated_type_derives = "Clone, Debug"
+    generated_type_derives = "Clone, PartialEq, Debug"
 )]
 mod api {}
 
@@ -52,12 +53,17 @@ pub async fn init_and_subscribe_on_chain_events(scouty: &Scouty) -> Result<(), S
     let client = scouty.client();
 
     // Initialize authority records
-    let mut records = BTreeMap::new();
-    let mut authority_records = AuthorityRecords::new(&mut records);
+    let mut authority_records_map = BTreeMap::new();
+    let mut authority_records = AuthorityRecords::new(&mut authority_records_map);
     init_authority_records(&scouty, &mut authority_records).await?;
 
+    // Initialize para records
+    let mut para_records_map = BTreeMap::new();
+    let mut para_records = ParaRecords::new(&mut para_records_map);
+    init_para_records(&scouty, &mut para_records).await?;
+
     // Start by calling init hook
-    try_init_hook(&scouty, &authority_records).await?;
+    try_init_hook(&scouty, &authority_records, &para_records).await?;
     //
     info!("Subscribe on-chain finalized events");
     let sub = client.rpc().subscribe_finalized_events_with_block().await?;
@@ -83,6 +89,7 @@ pub async fn init_and_subscribe_on_chain_events(scouty: &Scouty) -> Result<(), S
                                 &mut authority_records,
                                 block_number,
                                 authority,
+                                &mut para_records,
                             )
                             .await?;
                         }
@@ -162,6 +169,7 @@ pub async fn init_and_subscribe_on_chain_events(scouty: &Scouty) -> Result<(), S
 async fn try_init_hook(
     scouty: &Scouty,
     authority_records: &AuthorityRecords<'_>,
+    para_records: &ParaRecords<'_>,
 ) -> Result<(), ScoutyError> {
     let client = scouty.client();
     let api = client.clone().to_runtime_api::<KusamaApi>();
@@ -248,8 +256,22 @@ async fn try_init_hook(
         if config.expose_total_nominators || config.expose_all {
             if let Some(total_nominators) = total_nominators_map.get(&v.stash.to_string()) {
                 args.push(total_nominators.join(",").to_string());
+                args.push("-".to_string());
+            } else {
+                args.push("-".to_string());
+                args.push("-".to_string());
             }
         } else {
+            args.push("-".to_string());
+            args.push("-".to_string());
+        }
+
+        if config.expose_para_validator || config.expose_all {
+            let is_para_validator = para_records.is_para_validator(&v.stash);
+            args.push(is_para_validator.to_string());
+            args.push("-".to_string());
+        } else {
+            args.push("-".to_string());
             args.push("-".to_string());
         }
 
@@ -551,6 +573,7 @@ async fn try_run_session_hooks(
     authority_records: &mut AuthorityRecords<'_>,
     block_number: u32,
     authority: Option<AuthorityIndex>,
+    para_records: &mut ParaRecords<'_>,
 ) -> Result<(), ScoutyError> {
     let client = scouty.client();
     let api = client.clone().to_runtime_api::<KusamaApi>();
@@ -559,17 +582,29 @@ async fn try_run_session_hooks(
     // Collect session data
     let session = collect_session_data(&scouty, event.session_index).await?;
 
+    // Collect session active validators
+    let active_validators = api.storage().session().validators(None).await?;
+
     // Authority records -->
-    // Set authority_records a new authority set on new era
+    // Set a new authority set every new era in authority_records
     if (session.eras_session_index) == 1 {
         // Get current active authorities
-        authority_records.set_authorities(api.storage().session().validators(None).await?);
+        authority_records.set_authorities(active_validators.clone());
     }
-    // Set authority_records a new session
+    // Set a new session in authority_records
     authority_records.set_session(session.current_session_index);
     // Track authority record with the new session updated
     authority_records.insert_record(block_number, authority)?;
-    // Authority records --<
+    // Authority records <--
+
+    // Para records -->
+    // Set a new validator index for config stashes every new era in para_records
+    if (session.eras_session_index) == 1 {
+        para_records.reset_config_stashes(active_validators)?;
+    }
+    // Track para record on a new session
+    track_para_records(&scouty, session.current_session_index, para_records).await?;
+    // Para records <--
 
     let network = Network::load(client).await?;
     debug!("network {:?}", network);
@@ -596,7 +631,7 @@ async fn try_run_session_hooks(
             session.active_era_index.to_string(),
             session.current_session_index.to_string(),
             session.eras_session_index.to_string(),
-            "-".to_string(), // TODO: TBD -> block number
+            block_number.to_string(),
         ];
 
         if config.expose_network || config.expose_all {
@@ -643,8 +678,20 @@ async fn try_run_session_hooks(
         if config.expose_total_nominators || config.expose_all {
             if let Some(total_nominators) = total_nominators_map.get(&v.stash.to_string()) {
                 args.push(total_nominators.join(",").to_string());
+                args.push("-".to_string());
             }
         } else {
+            args.push("-".to_string());
+            args.push("-".to_string());
+        }
+
+        if config.expose_para_validator || config.expose_all {
+            let is_para_validator = para_records.is_para_validator(&v.stash);
+            let previous_six_sessions_total = para_records.previous_six_sessions_total(&v.stash);
+            args.push(is_para_validator.to_string());
+            args.push(previous_six_sessions_total.to_string());
+        } else {
+            args.push("-".to_string());
             args.push("-".to_string());
         }
 
@@ -983,5 +1030,52 @@ async fn init_authority_records<'a>(
             .await?;
         authority_records.records.insert(key, blocks);
     }
+    Ok(())
+}
+
+async fn init_para_records<'a>(
+    scouty: &Scouty,
+    para_records: &mut ParaRecords<'a>,
+) -> Result<(), ScoutyError> {
+    let client = scouty.client();
+    let api = client.clone().to_runtime_api::<KusamaApi>();
+
+    // Get current active authorities
+    let active_validators = api.storage().session().validators(None).await?;
+
+    para_records.reset_config_stashes(active_validators)?;
+
+    // Get current session
+    let current_session_index = api.storage().session().current_index(None).await?;
+
+    track_para_records(&scouty, current_session_index, para_records).await?;
+
+    Ok(())
+}
+
+async fn track_para_records<'a>(
+    scouty: &Scouty,
+    new_session_index: u32,
+    para_records: &mut ParaRecords<'a>,
+) -> Result<(), ScoutyError> {
+    let client = scouty.client();
+    let api = client.clone().to_runtime_api::<KusamaApi>();
+
+    // Get para active validator indices
+    let para_validators = api
+        .storage()
+        .paras_shared()
+        .active_validator_indices(None)
+        .await?;
+
+    // Parse Vec<ValidatorIndex> to Vec<u32>
+    let active_validator_indices: Vec<u32> = para_validators
+        .iter()
+        .map(|&api::runtime_types::polkadot_primitives::v0::ValidatorIndex(index)| index)
+        .collect();
+
+    // Insert record
+    para_records.insert_record(new_session_index, active_validator_indices);
+
     Ok(())
 }

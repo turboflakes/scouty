@@ -76,5 +76,5 @@ done
 # 1KV nominators not found and validator active
 if [ "$IS_ACTIVE" == "true" ] && [ "$IS_1KV_NOMINATOR_BACKING" == "false" ]; 
 then
-  printf "! 🚀 Running Independent 🥳 \n"
+  printf "! 🚀 Independent ✨ \n"
 fi

@@ -28,6 +28,10 @@
 # 18th - Number of Authored blocks in previous 6 Sessions (--expose-authored-blocks flag must be set)
 #
 # 19th - Total Nominators stashes [stash_1, stash_2, ..] (--expose-total-nominators flag must be set)
+# 20th - Not applicable
+#
+# 21th - Is Para validator? (true/false) (--expose-para-validator flag must be set)
+# 22th - Number of Para validator times in previous 6 Sessions (--expose-para-validator flag must be set)
 #
 # > Special character '!' controls message visibility on Matrix (Element)
 # Any message that starts with '!' will be sent to Matrix, to the user private room
@@ -59,6 +63,9 @@
 # echo "! (17th) - Number of Authored blocks in previous Session -> ${17}"
 # echo "! (18th) - Number of Authored blocks in previous 6 Sessions -> ${18}"
 # echo "! (19th) - Total Nominators -> ${19}"
+# echo "! (20th) - NA"
+# echo "! (21th) - Is Para Validator? -> ${21}"
+# echo "! (22th) - Number of Para Validator times in previous 6 Sessions -> ${22}"
 # echo "! -------------------------------"
 #
 # NOTE: this example requires the following flags to be present when runing scouty cli
@@ -71,8 +78,15 @@ then
   NOMINATORS=(${15//,/ })
   TOTAL_NOMINATORS=(${19//,/ })
   echo "! 🦸 Nominators ${#NOMINATORS[@]}/${#TOTAL_NOMINATORS[@]}"
-   # Authored Blocks
-  echo "! 🍫 Authored blocks ${17}/${18}"
+  # Authored Blocks
+  echo "! 📦 Last authored blocks ${17}/${18}"
+  # Para Validator
+  if [ "${21}" = "true" ]
+  then
+    echo "! 🪂 Para validator ✔️"
+  else
+    echo "! 🪂 Para validator ❌"
+  fi
   #
 else 
   # Nominators and Stake

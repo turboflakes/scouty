@@ -286,7 +286,7 @@ fn section_session(report: &mut Report, data: RawData) -> &Report {
     // Network info
     report.add_break();
     report.add_raw_text(format!(
-        "🔗 <b>{}</b> -> {} {} session ({}) of era {}",
+        "🔗 <b>{}</b> -> {} {} session ({}) of era <b>{}</b>",
         data.network.name,
         session_flag(data.session.eras_session_index),
         session_ordinal_number(data.session.eras_session_index),

@@ -18,7 +18,7 @@
 # 10th - Network name (--expose-network flag must be set)
 # 11th - Network token symbol (--expose-network flag must be set)
 # 12th - Network token decimals (--expose-network flag must be set)
-
+#
 # 13th - Validator Total stake (--expose-nominators flag must be set)
 # 14th - Validator Own stake (--expose-nominators flag must be set)
 # 15th - Active Nominators stashes [stash_1, stash_2, ..] (--expose-nominators flag must be set)
@@ -28,6 +28,10 @@
 # 18th - Number of Authored blocks in previous 6 Sessions (--expose-authored-blocks flag must be set)
 #
 # 19th - Total Nominators stashes [stash_1, stash_2, ..] (--expose-total-nominators flag must be set)
+# 20th - Not applicable
+#
+# 21th - Is Para validator? (true/false) (--expose-para-validator flag must be set)
+# 22th - Number of Para validator times in previous 6 Sessions (--expose-para-validator flag must be set)
 #
 # > Special character '!' controls message visibility on Matrix (Element)
 # Any message that starts with '!' will be sent to Matrix, to the user private room
@@ -59,6 +63,9 @@
 # echo "! (17th) - Number of Authored blocks in previous Session -> ${17}"
 # echo "! (18th) - Number of Authored blocks in previous 6 Sessions -> ${18}"
 # echo "! (19th) - Total Nominators -> ${19}"
+# echo "! (20th) - NA"
+# echo "! (21th) - Is Para Validator? -> ${21}"
+# echo "! (22th) - Number of Para Validator times in previous 6 Sessions -> ${22}"
 # echo "! -------------------------------"
 #
 # NOTE: this example requires the following flags to be present when runing scouty cli
@@ -69,15 +76,11 @@ then
   # Nominators and Stake
   # Convert nominators string "stash_1,stash_2" to an array ("stash_1" "stash_2")
   NOMINATORS=(${15//,/ })
-  TOTAL_NOMINATORS=(${19//,/ })
-  echo "! 🦸 Nominators ${#NOMINATORS[@]}/${#TOTAL_NOMINATORS[@]}"
+  echo "! 🦸 Nominators ${#NOMINATORS[@]}"
   TOTAL_ACTIVE_STAKE=$((${13}/(10**${12})))
-  echo "! 💰 Total Active Stake $TOTAL_ACTIVE_STAKE ${11}"
+  echo "! 💸 Active stake $TOTAL_ACTIVE_STAKE ${11}"
   OWN_STAKE=$((${14}/(10**${12})))
-  echo "! 💸 Own Stake $OWN_STAKE ${11}"
-   # Authored Blocks
-  echo "! 🍫 Authored blocks ${17}/${18}"
-  #
+  echo "! 💰 Own stake $OWN_STAKE ${11}"
   # 1kv nominators check
   FILENAME="$(dirname $0)/1kv/check_1kv_nominators.sh"
   $FILENAME $4 ${15} ${19}
@@ -85,12 +88,18 @@ then
 else 
   # Nominators and Stake
   TOTAL_NOMINATORS=(${19//,/ })
-  echo "! 🦸 Nominators 0/${#TOTAL_NOMINATORS[@]}"
-  #
+  echo "! 🦸 Inactive Nominators ${#TOTAL_NOMINATORS[@]}"
   # 1kv nominators check
   FILENAME="$(dirname $0)/1kv/check_1kv_nominators.sh"
   $FILENAME $4 "-" ${19}
 fi
+# Previous Era stats
+echo "! "
+echo "! Era $((${6}-1))"
+# Authored Blocks
+echo "! 📦 Total Authored blocks ${18}"
+# Para Validator
+echo "! 🪂 Total Para validator ${22}"
 #
 # ***** END *****
 
