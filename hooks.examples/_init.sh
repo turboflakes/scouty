@@ -85,31 +85,21 @@ then
   NOMINATORS=(${15//,/ })
   TOTAL_NOMINATORS=(${19//,/ })
   echo "! 🦸 Nominators ${#NOMINATORS[@]}/${#TOTAL_NOMINATORS[@]}"
+  # 1kv nominators check
+  FILENAME="$(dirname $0)/1kv/check_1kv_nominators.sh"
+  $FILENAME $4 ${15} ${19}
+  #
   TOTAL_ACTIVE_STAKE=$((${13}/(10**${12})))
   echo "! 💸 Active stake $TOTAL_ACTIVE_STAKE ${11}"
   OWN_STAKE=$((${14}/(10**${12})))
   echo "! 💰 Own stake $OWN_STAKE ${11}"
-  # Last authored blocks
-  echo "! 📦 Last authored blocks ${17}"
   # Para Validator
   if [ "${21}" = "true" ]
   then
-    echo "! 🪂 Para validator ✔️"
-  else
-    echo "! 🪂 Para validator ❌"
+    echo "! 🪂 Para validator ✔"
   fi
-  # Last era points
-  if [ " ${23}" -gt "${24}" ]
-  then
-    TREND="⬆️"
-  else 
-    TREND="⬇️"
-  fi
-  echo "! 🎲 Points ${23} $TREND (${24})"
-  #
-  # 1kv nominators check
-  FILENAME="$(dirname $0)/1kv/check_1kv_nominators.sh"
-  $FILENAME $4 ${15} ${19}
+  # Last authored blocks
+  echo "! 📦 Latest authored blocks ${17}"
   #
 else 
   # Nominators and Stake

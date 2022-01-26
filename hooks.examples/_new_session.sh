@@ -78,15 +78,13 @@ then
   NOMINATORS=(${15//,/ })
   TOTAL_NOMINATORS=(${19//,/ })
   echo "! 🦸 Nominators ${#NOMINATORS[@]}/${#TOTAL_NOMINATORS[@]}"
-  # Authored Blocks
-  echo "! 📦 Last authored blocks ${17}/${18}"
   # Para Validator
   if [ "${21}" = "true" ]
   then
-    echo "! 🪂 Para validator ✔️"
-  else
-    echo "! 🪂 Para validator ❌"
+    echo "! 🪂 Para validator 💯"
   fi
+  # Latest Authored Blocks
+  echo "! 📦 Latest authored blocks ${17}/${18}"
   #
 else 
   # Nominators and Stake

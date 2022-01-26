@@ -272,7 +272,6 @@ fn sub_section_validators(report: &mut Report, data: RawData) -> &Report {
             for line in raw_output.lines().filter(|line| line.starts_with("!")) {
                 report.add_raw_text(format!("‣ {}", line.strip_prefix("!").unwrap()));
             }
-            report.add_break();
         }
     }
     report
@@ -487,9 +486,9 @@ fn section_offline(report: &mut Report, data: RawData) -> &Report {
 
 fn session_flag(index: u32) -> String {
     match index {
-        1 => "🏁".to_string(),
+        1 => "🎬".to_string(),
         6 => "🏳️".to_string(),
-        _ => "🚩".to_string(),
+        _ => "⏳".to_string(),
     }
 }
 

@@ -82,13 +82,14 @@ then
   # Convert nominators string "stash_1,stash_2" to an array ("stash_1" "stash_2")
   NOMINATORS=(${15//,/ })
   echo "! 🦸 Nominators ${#NOMINATORS[@]}"
+  # 1kv nominators check
+  FILENAME="$(dirname $0)/1kv/check_1kv_nominators.sh"
+  $FILENAME $4 ${15} ${19}
+  #
   TOTAL_ACTIVE_STAKE=$((${13}/(10**${12})))
   echo "! 💸 Active stake $TOTAL_ACTIVE_STAKE ${11}"
   OWN_STAKE=$((${14}/(10**${12})))
   echo "! 💰 Own stake $OWN_STAKE ${11}"
-  # 1kv nominators check
-  FILENAME="$(dirname $0)/1kv/check_1kv_nominators.sh"
-  $FILENAME $4 ${15} ${19}
   #
 else 
   # Nominators and Stake
@@ -99,20 +100,20 @@ else
   $FILENAME $4 "-" ${19}
 fi
 # Previous Era stats
-echo "! "
-echo "! Era $((${6}-1))"
+echo "! ⋯"
+echo "! ⌫ Previous era $((${6}-1))"
 # Authored Blocks
-echo "! 📦 Total Authored blocks ${18}"
+echo "! 📦 Authored blocks ${18}"
 # Para Validator
-echo "! 🪂 Total Para validator ${22}"
+echo "! 🪂 Para validator ${22}×"
 # Era points
 if [ " ${23}" -gt "${24}" ]
 then
-  TREND="⬆️"
+  TREND="⇧"
 else 
-  TREND="⬇️"
+  TREND="⇩"
 fi
-echo "! 🎲 Points ${23} $TREND (${24})"
+echo "! 🎲 Points $TREND ${23} (${24})"
 #
 # ***** END *****
 
