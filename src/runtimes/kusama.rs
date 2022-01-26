@@ -29,9 +29,11 @@ use crate::hooks::{
 };
 use crate::para::ParaRecords;
 use crate::report::{
-    Init, Network, RawData, Referendum, Report, Section, Session, Slash, Validator, Validators,
+    Init, Network, Points, RawData, Referendum, Report, Section, Session, Slash, Validator,
+    Validators,
 };
 use crate::scouty::{get_account_id_from_storage_key, Scouty};
+use crate::stats;
 use async_recursion::async_recursion;
 use codec::{Decode, Encode};
 use log::{debug, info};
@@ -196,6 +198,13 @@ async fn try_init_hook(
         BTreeMap::new()
     };
 
+    // Fetch era reward points from previous era
+    let era_reward_points = api
+        .storage()
+        .staking()
+        .eras_reward_points(session.active_era_index - 1, None)
+        .await?;
+
     // Collect validators info based on config stashes
     let mut validators = collect_validators_data(&scouty).await?;
 
@@ -270,6 +279,15 @@ async fn try_init_hook(
             let is_para_validator = para_records.is_para_validator(&v.stash);
             args.push(is_para_validator.to_string());
             args.push("-".to_string());
+        } else {
+            args.push("-".to_string());
+            args.push("-".to_string());
+        }
+
+        if config.expose_era_points || config.expose_all {
+            let points = get_validator_points_info(&v.stash, era_reward_points.clone()).await?;
+            args.push(points.validator.to_string());
+            args.push(points.era_avg.to_string());
         } else {
             args.push("-".to_string());
             args.push("-".to_string());
@@ -616,6 +634,13 @@ async fn try_run_session_hooks(
         BTreeMap::new()
     };
 
+    // Fetch era reward points from previous era
+    let era_reward_points = api
+        .storage()
+        .staking()
+        .eras_reward_points(session.active_era_index - 1, None)
+        .await?;
+
     // Collect validators info based on config stashes
     let mut validators = collect_validators_data(&scouty).await?;
 
@@ -705,6 +730,16 @@ async fn try_run_session_hooks(
 
         // Try HOOK_NEW_ERA
         if (session.eras_session_index) == 1 {
+            // Expose validator last era points
+            if config.expose_era_points || config.expose_all {
+                let points = get_validator_points_info(&v.stash, era_reward_points.clone()).await?;
+                args.push(points.validator.to_string());
+                args.push((points.era_avg as u32).to_string());
+            } else {
+                args.push("-".to_string());
+                args.push("-".to_string());
+            }
+
             // Try run hook
             let hook = Hook::try_run(HOOK_NEW_ERA, &config.hook_new_era_path, args.clone())?;
             v.hooks.push(hook);
@@ -1078,4 +1113,36 @@ async fn track_para_records<'a>(
     para_records.insert_record(new_session_index, active_validator_indices);
 
     Ok(())
+}
+
+async fn get_validator_points_info(
+    stash: &AccountId32,
+    era_reward_points: api::runtime_types::pallet_staking::EraRewardPoints<AccountId32>,
+) -> Result<Points, ScoutyError> {
+    let stash_points = match era_reward_points
+        .individual
+        .iter()
+        .find(|(s, _)| *s == stash)
+    {
+        Some((_, p)) => *p,
+        None => 0,
+    };
+
+    // Calculate average points
+    let mut points: Vec<u32> = era_reward_points
+        .individual
+        .into_iter()
+        .map(|(_, points)| points)
+        .collect();
+
+    let points_f64: Vec<f64> = points.iter().map(|points| *points as f64).collect();
+
+    let points = Points {
+        validator: stash_points,
+        era_avg: stats::mean(&points_f64),
+        ci99_9_interval: stats::confidence_interval_99_9(&points_f64),
+        outlier_limits: stats::iqr_interval(&mut points),
+    };
+
+    Ok(points)
 }

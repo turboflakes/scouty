@@ -106,6 +106,8 @@ pub struct Config {
     #[serde(default)]
     pub expose_para_validator: bool,
     #[serde(default)]
+    pub expose_era_points: bool,
+    #[serde(default)]
     pub expose_all: bool,
 }
 
@@ -229,6 +231,13 @@ fn get_config() -> Config {
         .long("expose-para-validator")
         .help(
           "Expose the para validator details under new positional arguments for some of the hooks. Note: `scouty` only look after total nominators for each validator stash predefined.",
+        ),
+      )
+    .arg(
+      Arg::with_name("expose-era-points")
+        .long("expose-era-points")
+        .help(
+          "Expose the era points details under new positional arguments for the `_new_era` hook. Note: `scouty` only look after total nominators for each validator stash predefined.",
         ),
       )
     .arg(
@@ -444,6 +453,10 @@ fn get_config() -> Config {
 
     if matches.is_present("expose-para-validator") {
         env::set_var("SCOUTY_EXPOSE_PARA_VALIDATOR", "true");
+    }
+
+    if matches.is_present("expose-era-points") {
+        env::set_var("SCOUTY_EXPOSE_ERA_POINTS", "true");
     }
 
     if matches.is_present("expose-all") {

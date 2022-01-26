@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add block number to session and era scripts has positional argument `$9`
 - Expose Para validator under a new flag `--expose-para-validator`
+- Expose Era points under a new flag `--expose-era-points`
 
 ### Changed
 

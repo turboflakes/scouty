@@ -28,6 +28,7 @@ mod para;
 mod report;
 mod runtimes;
 mod scouty;
+mod stats;
 
 use crate::config::CONFIG;
 use crate::scouty::Scouty;

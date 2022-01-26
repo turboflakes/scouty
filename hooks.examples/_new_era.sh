@@ -33,6 +33,9 @@
 # 21th - Is Para validator? (true/false) (--expose-para-validator flag must be set)
 # 22th - Number of Para validator times in previous 6 Sessions (--expose-para-validator flag must be set)
 #
+# 23th - Last era validator points (--expose-era-points flag must be set)
+# 24th - Last era validators average points (--expose-era-points flag must be set)
+#
 # > Special character '!' controls message visibility on Matrix (Element)
 # Any message that starts with '!' will be sent to Matrix, to the user private room
 # 
@@ -66,6 +69,8 @@
 # echo "! (20th) - NA"
 # echo "! (21th) - Is Para Validator? -> ${21}"
 # echo "! (22th) - Number of Para Validator times in previous 6 Sessions -> ${22}"
+# echo "! (23th) - Last era validator points -> ${23}"
+# echo "! (24th) - Last era avg validators points -> ${24}"
 # echo "! -------------------------------"
 #
 # NOTE: this example requires the following flags to be present when runing scouty cli
@@ -100,6 +105,14 @@ echo "! Era $((${6}-1))"
 echo "! 📦 Total Authored blocks ${18}"
 # Para Validator
 echo "! 🪂 Total Para validator ${22}"
+# Era points
+if [ " ${23}" -gt "${24}" ]
+then
+  TREND="⬆️"
+else 
+  TREND="⬇️"
+fi
+echo "! 🎲 Points ${23} $TREND (${24})"
 #
 # ***** END *****
 

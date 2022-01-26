@@ -72,6 +72,14 @@ impl Network {
     }
 }
 
+#[derive(Debug)]
+pub struct Points {
+    pub validator: u32,
+    pub era_avg: f64,
+    pub ci99_9_interval: (f64, f64),
+    pub outlier_limits: (f64, f64),
+}
+
 #[derive(Debug, Deserialize, Default)]
 pub struct Session {
     pub active_era_index: u32,
@@ -264,6 +272,7 @@ fn sub_section_validators(report: &mut Report, data: RawData) -> &Report {
             for line in raw_output.lines().filter(|line| line.starts_with("!")) {
                 report.add_raw_text(format!("‣ {}", line.strip_prefix("!").unwrap()));
             }
+            report.add_break();
         }
     }
     report
