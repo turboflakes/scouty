@@ -280,7 +280,7 @@ fn sub_section_validators(report: &mut Report, data: RawData) -> &Report {
 fn section_init(report: &mut Report, data: RawData) -> &Report {
     report.add_break();
     report.add_raw_text(format!(
-        "🔗 <b>{}</b> -> current block <a href=\"https://{}.subscan.io/block/{}\">#{}</a>",
+        "⛓️ <b>{}</b> -> current block <a href=\"https://{}.subscan.io/block/{}\">#{}</a>",
         data.network.name,
         data.network.name.to_lowercase(),
         data.init.block_number,
@@ -294,7 +294,7 @@ fn section_session(report: &mut Report, data: RawData) -> &Report {
     // Network info
     report.add_break();
     report.add_raw_text(format!(
-        "🔗 <b>{}</b> -> {} {} session ({}) of era <b>{}</b>",
+        "⛓️ <b>{}</b> -> {} {} session ({}) of era <b>{}</b>",
         data.network.name,
         session_flag(data.session.eras_session_index),
         session_ordinal_number(data.session.eras_session_index),
@@ -309,7 +309,7 @@ fn section_democracy(report: &mut Report, data: RawData) -> &Report {
     // Network info
     report.add_break();
     report.add_raw_text(format!(
-        "🔗 <b>{}</b> -> 🗳️ Referendum {} ({}) has begun.",
+        "⛓️ <b>{}</b> -> 🗳️ Referendum {} ({}) has begun.",
         data.network.name, data.referendum.ref_index, data.referendum.vote_threshold,
     ));
 
@@ -354,7 +354,7 @@ fn section_slash(report: &mut Report, data: RawData) -> &Report {
     // Network info
     report.add_break();
     report.add_raw_text(format!(
-        "🔗 <b>{}</b> -> <a href=\"https://polkadot.js.org/apps/?rpc=wss%3A%2F%2F{}.api.onfinality.io%2Fpublic-ws#/staking/slashes\">🏴‍☠️ Slash occurred!</a>",
+        "⛓️ <b>{}</b> -> <a href=\"https://polkadot.js.org/apps/?rpc=wss%3A%2F%2F{}.api.onfinality.io%2Fpublic-ws#/staking/slashes\">🏴‍☠️ Slash occurred!</a>",
         data.network.name,
         data.network.name.to_lowercase(),
     ));
@@ -408,7 +408,7 @@ fn section_chill(report: &mut Report, data: RawData) -> &Report {
     // Network info
     report.add_break();
     report.add_raw_text(format!(
-        "🔗 <b>{}</b> -> 🧊 Chill detected.",
+        "⛓️ <b>{}</b> -> 🧊 Chill detected.",
         data.network.name
     ));
 
@@ -448,7 +448,7 @@ fn section_offline(report: &mut Report, data: RawData) -> &Report {
     // Network info
     report.add_break();
     report.add_raw_text(format!(
-        "🔗 <b>{}</b> -> ⚪ Offline detected.",
+        "⛓️ <b>{}</b> -> ⚪ Offline detected.",
         data.network.name
     ));
 

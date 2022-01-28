@@ -78,38 +78,50 @@
 # else
 #   echo "! 🔴 -> 😤"
 # fi
+#
+# NOTE: this example requires the following flags to be present when runing scouty cli
+# /opt/scouty-cli/scouty --config-path /opt/scouty-cli/.env --expose-all
+#
 if [ "$4" = "true" ]
 then
   # Nominators and Stake
   # Convert nominators string "stash_1,stash_2" to an array ("stash_1" "stash_2")
   NOMINATORS=(${15//,/ })
   TOTAL_NOMINATORS=(${19//,/ })
-  echo "! 🦸 Nominators ${#NOMINATORS[@]}/${#TOTAL_NOMINATORS[@]}"
+  echo "! 🦸 Nominators: ${#NOMINATORS[@]}/${#TOTAL_NOMINATORS[@]}"
   # 1kv nominators check
   FILENAME="$(dirname $0)/1kv/check_1kv_nominators.sh"
   $FILENAME $4 ${15} ${19}
   #
   TOTAL_ACTIVE_STAKE=$((${13}/(10**${12})))
-  echo "! 💸 Active stake $TOTAL_ACTIVE_STAKE ${11}"
+  echo "! 💸 Active stake: $TOTAL_ACTIVE_STAKE ${11}"
   OWN_STAKE=$((${14}/(10**${12})))
-  echo "! 💰 Own stake $OWN_STAKE ${11}"
+  echo "! 💰 Own stake: $OWN_STAKE ${11}"
   # Para Validator
   if [ "${21}" = "true" ]
   then
-    echo "! 🪂 Para validator ✔"
+    echo "! 🪂 Para validator 💯"
   fi
   # Last authored blocks
-  echo "! 📦 Latest authored blocks ${17}"
+  echo "! 📦 Latest authored blocks: ${17}"
   #
 else 
   # Nominators and Stake
   TOTAL_NOMINATORS=(${19//,/ })
-  echo "! 🦸 Nominators 0/${#TOTAL_NOMINATORS[@]}"
+  echo "! 🦸 Inactive Nominators: ${#TOTAL_NOMINATORS[@]}"
   #
   # 1kv nominators check
   FILENAME="$(dirname $0)/1kv/check_1kv_nominators.sh"
   $FILENAME $4 "-" ${19}
 fi
+# System metrics
+# echo "! ----"
+# USERNAME="USERNAME"
+# e.g the IP address could be stored in a file and be loaded based depending on the validator stash
+# IPADDRESS_FILENAME="$(dirname $0)/node/stashes/$1"
+# IPADDRESS=$( <$IPADDRESS_FILENAME )
+# VERIFY_SYSTEM_METRICS="$( $(dirname $0)/node/verify_system_metrics.sh $USERNAME $IPADDRESS )"
+# echo "$VERIFY_SYSTEM_METRICS"
 #
 # ***** END *****
 

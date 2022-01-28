@@ -77,21 +77,32 @@ then
   # Convert nominators string "stash_1,stash_2" to an array ("stash_1" "stash_2")
   NOMINATORS=(${15//,/ })
   TOTAL_NOMINATORS=(${19//,/ })
-  echo "! 🦸 Nominators ${#NOMINATORS[@]}/${#TOTAL_NOMINATORS[@]}"
+  echo "! 🦸 Nominators: ${#NOMINATORS[@]}/${#TOTAL_NOMINATORS[@]}"
   # Para Validator
   if [ "${21}" = "true" ]
   then
     echo "! 🪂 Para validator 💯"
   fi
   # Latest Authored Blocks
-  echo "! 📦 Latest authored blocks ${17}/${18}"
+  echo "! 📦 Latest authored blocks: ${17}/${18}"
   #
 else 
   # Nominators and Stake
   TOTAL_NOMINATORS=(${19//,/ })
-  echo "! 🦸 Nominators 0/${#TOTAL_NOMINATORS[@]}"
+  echo "! 🦸 Inactive Nominators: ${#TOTAL_NOMINATORS[@]}"
+  # 1kv nominators check
+  FILENAME="$(dirname $0)/1kv/check_1kv_nominators.sh"
+  $FILENAME $4 "-" ${19}
   #
 fi
+# System metrics
+# echo "! ----"
+# USERNAME="USERNAME"
+# e.g the IP address could be stored in a file and be loaded based depending on the validator stash
+# IPADDRESS_FILENAME="$(dirname $0)/node/stashes/$1"
+# IPADDRESS=$( <$IPADDRESS_FILENAME )
+# VERIFY_SYSTEM_METRICS="$( $(dirname $0)/node/verify_system_metrics.sh $USERNAME $IPADDRESS )"
+# echo "$VERIFY_SYSTEM_METRICS"
 #
 # ***** END *****
 
