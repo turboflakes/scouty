@@ -7,15 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2021-01-31
+
 ### Added
 
-- Add block number to session and era scripts has positional argument `$9`
-- Expose Para validator under a new flag `--expose-para-validator`
-- Expose Era points under a new flag `--expose-era-points`
+- Add block number to session and era scripts has positional argument `${9}`
+- Expose Para validator under a new flag `--expose-para-validator`. If para validator in current session is available through positional argument `${22}` and the total number of para validator times in previous 6 sessionds in argument `${23}`
+- Expose Era points under a new flag `--expose-era-points` with previous validator era points available at `${24}` and average points at position `${25}`
+- Projected APR calculation based on Polkadot.js. Value available at position `${13}`
+- Additional system metrics loaded directly from the server
 
 ### Changed
 
-- Review `_init.sh`, `_new_era.sh`, `_new_session.sh` examples
+- Review `_init.sh`, `_new_era.sh`, `_new_session.sh` examples. 
+- Adjusted 1KV nominators message
+- Breaking change: With the addition of the APR at position `${13}` all next arguments have shift their position by +1.
 
 ## [0.1.25] - 2021-01-24
 

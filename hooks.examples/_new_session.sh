@@ -57,7 +57,7 @@
 # echo "! (10th) - Network name -> ${10}"
 # echo "! (11th) - Network token symbol -> ${11}"
 # echo "! (12th) - Network token decimals -> ${12}"
-# echo "! (13th) - Porjected APR -> ${13}"
+# echo "! (13th) - Projected APR -> ${13}"
 # echo "! (14th) - Validator total stake -> ${14}"
 # echo "! (15th) - Validator own stake -> ${15}"
 # echo "! (16th) - Active Nominators -> ${16}"
