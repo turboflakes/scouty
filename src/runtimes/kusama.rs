@@ -37,7 +37,7 @@ use crate::stats;
 use async_recursion::async_recursion;
 use codec::{Decode, Encode};
 use log::{debug, info};
-use std::{collections::BTreeMap, result::Result, str::FromStr};
+use std::{collections::BTreeMap, convert::TryInto, result::Result, str::FromStr};
 use subxt::{
     sp_consensus_babe::AuthorityIndex, sp_core::hexdisplay::HexDisplay, sp_runtime::AccountId32,
     CustomEventSubscription, DefaultConfig, DefaultExtra, RawEvent,
@@ -50,6 +50,8 @@ use subxt::{
 mod api {}
 
 pub type KusamaApi = api::RuntimeApi<DefaultConfig, DefaultExtra<DefaultConfig>>;
+
+const ERAS_PER_DAY: u32 = 4;
 
 pub async fn init_and_subscribe_on_chain_events(scouty: &Scouty) -> Result<(), ScoutyError> {
     let client = scouty.client();
@@ -205,6 +207,21 @@ async fn try_init_hook(
         .eras_reward_points(session.active_era_index - 1, None)
         .await?;
 
+    // Collect previusly era reward
+    let era_reward: u128 = if let Some(reward) = api
+        .storage()
+        .staking()
+        .eras_validator_reward(session.active_era_index - 1, None)
+        .await?
+    {
+        reward
+    } else {
+        0
+    };
+
+    // Collect session active validators
+    let active_validators = api.storage().session().validators(None).await?;
+
     // Collect validators info based on config stashes
     let mut validators = collect_validators_data(&scouty).await?;
 
@@ -234,8 +251,21 @@ async fn try_init_hook(
         }
 
         if config.expose_nominators || config.expose_all {
+            // get active nominators info
             let (total_active_stake, own_stake, active_nominators, active_nominators_stake) =
                 get_active_nominators(&scouty, session.active_era_index, &v.stash).await?;
+            // calculate APR
+            let apr = calculate_projected_apr(
+                &scouty,
+                &v.stash,
+                network.token_decimals,
+                total_active_stake,
+                era_reward,
+                active_validators.len().try_into().unwrap(),
+            )
+            .await?;
+            //
+            args.push(apr.to_string());
             args.push(total_active_stake.to_string());
             args.push(own_stake.to_string());
             args.push(active_nominators.join(",").to_string());
@@ -247,6 +277,7 @@ async fn try_init_hook(
                     .join(","),
             );
         } else {
+            args.push("-".to_string());
             args.push("-".to_string());
             args.push("-".to_string());
             args.push("-".to_string());
@@ -1145,4 +1176,45 @@ async fn get_validator_points_info(
     };
 
     Ok(points)
+}
+
+async fn calculate_projected_apr(
+    scouty: &Scouty,
+    stash: &AccountId32,
+    token_decimals: u8,
+    stash_active_stake: u128,
+    era_reward: u128,
+    total_active_validators: u32,
+) -> Result<f64, ScoutyError> {
+    let client = scouty.client();
+    let api = client.clone().to_runtime_api::<KusamaApi>();
+
+    // Get validator prefs
+    let prefs = api
+        .storage()
+        .staking()
+        .validators(stash.clone(), None)
+        .await?;
+
+    let api::runtime_types::sp_arithmetic::per_things::Perbill(c) = prefs.commission;
+    let commission = normalize_commission(c);
+
+    let avg_reward_per_validator_per_era =
+        from_plancks_to_ksm(token_decimals, era_reward) / total_active_validators as f64;
+
+    let nominators_reward = (1.0 - commission) * avg_reward_per_validator_per_era;
+    let nominator_reward_per_ksm =
+        (1.0_f64 / from_plancks_to_ksm(token_decimals, stash_active_stake)) * nominators_reward;
+    let apr = nominator_reward_per_ksm * ERAS_PER_DAY as f64 * 365.0_f64;
+    Ok(apr)
+}
+
+/// Normalize commission perbill between 0 - 1
+fn normalize_commission(commission: u32) -> f64 {
+    (commission as f64 / 10.0_f64.powi(9)) as f64
+}
+
+/// Convert Planks to KSM
+fn from_plancks_to_ksm(token_decimals: u8, plancks: u128) -> f64 {
+    (plancks as f64 / 10.0_f64.powi(token_decimals.into())) as f64
 }

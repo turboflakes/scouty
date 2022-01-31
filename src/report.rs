@@ -263,7 +263,10 @@ fn sub_section_validators(report: &mut Report, data: RawData) -> &Report {
             validator.stash,
             validator.name,
         ));
-        for hook in validator.hooks {
+        for (i, hook) in validator.hooks.into_iter().enumerate() {
+            if i != 0 {
+                report.add_break();
+            }
             let exists_desc = if !hook.filename_exists { "❌" } else { "" };
             report.add_text(format!("🪝 <code>{}</code> {}", hook.filename, exists_desc));
 
