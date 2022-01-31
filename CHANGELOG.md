@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2021-01-31
+
+### Changed
+
+- Fix Project APR missing from `_new_session` and `_new_era` hooks
+
 ## [0.2.0] - 2021-01-31
 
 ### Added
