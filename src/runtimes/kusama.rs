@@ -649,7 +649,7 @@ async fn try_run_session_hooks(
     // Para records -->
     // Set a new validator index for config stashes every new era in para_records
     if (session.eras_session_index) == 1 {
-        para_records.reset_config_stashes(active_validators)?;
+        para_records.reset_config_stashes(active_validators.clone())?;
     }
     // Track para record on a new session
     track_para_records(&scouty, session.current_session_index, para_records).await?;
@@ -671,6 +671,18 @@ async fn try_run_session_hooks(
         .staking()
         .eras_reward_points(session.active_era_index - 1, None)
         .await?;
+
+    // Collect previusly era reward
+    let era_reward: u128 = if let Some(reward) = api
+        .storage()
+        .staking()
+        .eras_validator_reward(session.active_era_index - 1, None)
+        .await?
+    {
+        reward
+    } else {
+        0
+    };
 
     // Collect validators info based on config stashes
     let mut validators = collect_validators_data(&scouty).await?;
@@ -701,9 +713,20 @@ async fn try_run_session_hooks(
         }
 
         if config.expose_nominators || config.expose_all {
-            let (total_stake, own_stake, nominators, nominators_stake) =
+            let (total_active_stake, own_stake, nominators, nominators_stake) =
                 get_active_nominators(&scouty, session.active_era_index, &v.stash).await?;
-            args.push(total_stake.to_string());
+            // calculate APR
+            let apr = calculate_projected_apr(
+                &scouty,
+                &v.stash,
+                network.token_decimals,
+                total_active_stake,
+                era_reward,
+                active_validators.len().try_into().unwrap(),
+            )
+            .await?;
+            args.push(apr.to_string());
+            args.push(total_active_stake.to_string());
             args.push(own_stake.to_string());
             args.push(nominators.join(",").to_string());
             args.push(
@@ -714,6 +737,7 @@ async fn try_run_session_hooks(
                     .join(","),
             );
         } else {
+            args.push("-".to_string());
             args.push("-".to_string());
             args.push("-".to_string());
             args.push("-".to_string());
