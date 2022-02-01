@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2021-01-31
+
+### Changed
+
+- Rename block height to block grift in examples script
+- Fix APR value to be displayed as percentage
+
 ## [0.2.1] - 2021-01-31
 
 ### Changed

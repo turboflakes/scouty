@@ -80,7 +80,7 @@
 #
 if [ "$4" = "true" ]
 then
-  echo "! ↩ Projected APR: ${13}"
+  echo "! ↩ Projected APR: ${13}%"
   # Nominators and Stake
   # Convert nominators string "stash_1,stash_2" to an array ("stash_1" "stash_2")
   NOMINATORS=(${16//,/ })
@@ -108,7 +108,7 @@ echo "! ⌫ Previous era $((${6}-1))"
 # Authored Blocks
 echo "! 📦 Authored blocks: ${19}"
 # Para Validator
-echo "! 🪂 Para validator: ${23}×"
+echo "! 🪂 Para validator: ${23}x"
 # Era points
 if [ " ${24}" -gt "${25}" ]
 then

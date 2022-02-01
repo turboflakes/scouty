@@ -265,7 +265,7 @@ async fn try_init_hook(
             )
             .await?;
             //
-            args.push(apr.to_string());
+            args.push(format!("{:.2}", apr * 100.0));
             args.push(total_active_stake.to_string());
             args.push(own_stake.to_string());
             args.push(active_nominators.join(",").to_string());
@@ -725,7 +725,7 @@ async fn try_run_session_hooks(
                 active_validators.len().try_into().unwrap(),
             )
             .await?;
-            args.push(apr.to_string());
+            args.push(format!("{:.2}", apr * 100.0));
             args.push(total_active_stake.to_string());
             args.push(own_stake.to_string());
             args.push(nominators.join(",").to_string());
@@ -1232,6 +1232,32 @@ async fn calculate_projected_apr(
     let apr = nominator_reward_per_ksm * ERAS_PER_DAY as f64 * 365.0_f64;
     Ok(apr)
 }
+
+// async fn calculate_current_apr(scouty: &Scouty) -> Result<f64, ScoutyError> {
+//     let client = scouty.client();
+//     let api = client.clone().to_runtime_api::<KusamaApi>();
+
+//     // Get validator prefs
+//     info!("Starting validators sync");
+//     let history_depth: u32 = api.storage().staking().history_depth(None).await?;
+//     let prefs = api
+//         .storage()
+//         .staking()
+//         .validators(stash.clone(), None)
+//         .await?;
+
+//     let api::runtime_types::sp_arithmetic::per_things::Perbill(c) = prefs.commission;
+//     let commission = normalize_commission(c);
+
+//     let avg_reward_per_validator_per_era =
+//         from_plancks_to_ksm(token_decimals, era_reward) / total_active_validators as f64;
+
+//     let nominators_reward = (1.0 - commission) * avg_reward_per_validator_per_era;
+//     let nominator_reward_per_ksm =
+//         (1.0_f64 / from_plancks_to_ksm(token_decimals, stash_active_stake)) * nominators_reward;
+//     let apr = nominator_reward_per_ksm * ERAS_PER_DAY as f64 * 365.0_f64;
+//     Ok(apr)
+// }
 
 /// Normalize commission perbill between 0 - 1
 fn normalize_commission(commission: u32) -> f64 {

@@ -249,7 +249,7 @@ async fn try_init_hook(
             )
             .await?;
             //
-            args.push(apr.to_string());
+            args.push(format!("{:.2}", apr * 100.0));
             args.push(total_active_stake.to_string());
             args.push(own_stake.to_string());
             args.push(active_nominators.join(",").to_string());
@@ -652,7 +652,7 @@ async fn try_run_session_hooks(
                 active_validators.len().try_into().unwrap(),
             )
             .await?;
-            args.push(apr.to_string());
+            args.push(format!("{:.2}", apr * 100.0));
             args.push(total_active_stake.to_string());
             args.push(own_stake.to_string());
             args.push(nominators.join(",").to_string());
