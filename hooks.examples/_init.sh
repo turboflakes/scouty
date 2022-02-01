@@ -86,7 +86,7 @@
 #
 if [ "$4" = "true" ]
 then
-  echo "! ↩ Projected APR: ${13}"
+  echo "! ↩ Projected APR: ${13}%"
   # Nominators and Stake
   # Convert nominators string "stash_1,stash_2" to an array ("stash_1" "stash_2")
   NOMINATORS=(${16//,/ })
