@@ -80,6 +80,13 @@ then
   NOMINATORS=(${16//,/ })
   TOTAL_NOMINATORS=(${20//,/ })
   echo "! 🦸 Nominators: ${#NOMINATORS[@]}/${#TOTAL_NOMINATORS[@]}"
+  # Run 1kv nominators check for all sessions apart from session 1 which is already visible by the
+  # end of era script
+  if [ "$8" != "1" ]
+  then
+    FILENAME="$(dirname $0)/1kv/check_1kv_nominators.sh"
+    $FILENAME $4 ${16} ${20}
+  fi
   # Para Validator
   if [ "${22}" = "true" ]
   then
