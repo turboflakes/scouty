@@ -74,7 +74,7 @@ FINALIZED_BLOCK_NUMBER=${FINALIZED_BLOCK_NUMBER//\"/}
 FINALIZED_BLOCK_NUMBER=${FINALIZED_BLOCK_NUMBER//0x/}
 # Convert block number hex to decimal
 FINALIZED_BLOCK_NUMBER=$(( 16#$FINALIZED_BLOCK_NUMBER ))
-BLOCK_HEIGHT=$(( $CURRENT_BLOCK_NUMBER-$FINALIZED_BLOCK_NUMBER ))
+BLOCK_DRIFT=$(( $CURRENT_BLOCK_NUMBER-$FINALIZED_BLOCK_NUMBER ))
 # ---
 
 # --- Get network metrics rx/tx
@@ -85,10 +85,10 @@ NET_TX=$(awk '{print $1/1000}' <<<"${NET_TX}")
 # ---
 MSG_IDLE="! 💤 $PEERS Peers ⬇ ${NET_RX:0:4}MiB/s ⬆ ${NET_TX:0:4}MiB/s \n"
 MSG_BLOCKS="! 🎭 Best: #${CURRENT_BLOCK_NUMBER}, Finalized: #${FINALIZED_BLOCK_NUMBER} \n"
-MSG_BLOCK_HEIGHT="! 📏 Block height: ${BLOCK_HEIGHT} \n"
+MSG_BLOCK_DRIFT="! 📏 Block drift: ${BLOCK_DRIFT} \n"
 
 # Note: Delete sysstat logs after collecting metrics (every session)
 sudo rm -r $SYSSTAT_LOGS
 
 # Printf metrics
-printf "$MSG_STORAGE$MSG_CPU_RAM$MSG_IDLE$MSG_BLOCKS$MSG_BLOCK_HEIGHT"
+printf "$MSG_STORAGE$MSG_CPU_RAM$MSG_IDLE$MSG_BLOCKS$MSG_BLOCK_DRIFT"
