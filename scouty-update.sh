@@ -27,9 +27,9 @@
 DIRNAME="/opt/scouty-cli"
 FILENAME="$DIRNAME/scouty"
 
-read -p "Enter the Scouty version that you would like to download (e.g.: 0.2.1): " INPUT_VERSION
+read -p "Enter the Scouty version that you would like to download (e.g.: 0.2.2): " INPUT_VERSION
 if [ "$INPUT_VERSION" = "" ]; then
-                    INPUT_VERSION="0.2.1"
+                    INPUT_VERSION="0.2.2"
 fi
 
 URI="https://github.com/turboflakes/scouty/releases/download/v$INPUT_VERSION/scouty"
