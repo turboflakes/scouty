@@ -197,6 +197,12 @@ To enable **Scouty Bot** you will need to create a specific account on Element o
 
 ### Scouty Bot hook message [examples](https://github.com/turboflakes/scouty/tree/main/assets)
 
+#### _new_session + _new_era
+
+<p align="left">
+    <img  style="width: 384px;" src="https://github.com/turboflakes/scouty/blob/main/assets/matrix_new_session_new_era.png?raw=true">
+</p>
+
 #### _democracy_started
 
 <p align="left">
