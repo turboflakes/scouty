@@ -43,7 +43,7 @@ use subxt::{
 
 pub async fn create_substrate_node_client(
     config: Config,
-) -> Result<Client<DefaultConfig>, subxt::Error> {
+) -> Result<Client<DefaultConfig>, subxt::BasicError> {
     ClientBuilder::new()
         .set_url(config.substrate_ws_url)
         .build::<DefaultConfig>()

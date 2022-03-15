@@ -11,11 +11,9 @@ edition = "2018"
 dotenv = "0.15"
 envy = "0.4"
 log = "0.4"
-env_logger = "0.6"
 clap = "2.33"
 lazy_static = "1.4"
 derive_more = "0.99"
-async-std = { version = "1.10.0", features = ["attributes", "tokio1"] }
 async-recursion = "0.3.2"
 serde = "1.0.132"
 serde_json = "1.0.68"
@@ -27,10 +25,16 @@ url = "2.2.2"
 base64 = "0.13.0"
 rand = "0.8.4"
 quote = "1.0.10"
-hex = "0.4"
 
-subxt = { package = "subxt", git = "https://github.com/turboflakes/subxt", rev = "bfeefda" }
+# subxt = { package = "subxt", git = "https://github.com/turboflakes/subxt", rev = "bfeefda" }
+subxt = { git = "https://github.com/paritytech/subxt", rev = "798a1d0" }
 
 # Dependencies required since the changes on the new subxt package
+# NOTE: sp-consensus-babe is needed to be able to decode the authority index in the block header logs
+sp-consensus-babe = {version = "0.10.0-dev", git = "https://github.com/paritytech/substrate" }
 
-codec = { package = "parity-scale-codec", version = "2", default-features = false, features = ["derive", "full", "bit-vec"] }
+async-std = { version = "1.8.0", features = ["attributes", "tokio1"] }
+env_logger = "0.9.0"
+futures = "0.3.13"
+codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive", "full", "bit-vec"] }
+hex = "0.4.3"

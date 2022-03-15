@@ -88,7 +88,7 @@ pub struct Session {
     pub queued_session_keys_changed: bool,
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize)]
 pub struct Validator {
     pub stash: AccountId32,
     #[serde(default)]
@@ -110,10 +110,17 @@ pub struct Validator {
 }
 
 impl Validator {
-    pub fn new(stash: AccountId32) -> Validator {
-        Validator {
+    pub fn new(stash: AccountId32) -> Self {
+        Self {
             stash,
-            ..Default::default()
+            name: "".to_string(),
+            is_active: false,
+            is_queued: false,
+            queued_session_keys: Vec::new(),
+            is_slashed: false,
+            is_chilled: false,
+            is_offline: false,
+            hooks: Vec::new(),
         }
     }
 }
@@ -132,8 +139,7 @@ pub struct Referendum {
 
 #[derive(Debug, Deserialize, Default)]
 pub struct Slash {
-    #[serde(default)]
-    pub who: AccountId32,
+    pub who: Option<AccountId32>,
     #[serde(default)]
     pub amount_value: u128,
     #[serde(default)]

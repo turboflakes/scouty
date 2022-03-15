@@ -21,25 +21,53 @@
 
 use crate::config::CONFIG;
 use crate::errors::ScoutyError;
+use codec::Decode;
 use log::debug;
+use sp_consensus_babe::digests::PreDigest;
 use std::{collections::BTreeMap, convert::TryInto, result::Result, str::FromStr};
-use subxt::{sp_consensus_babe::AuthorityIndex, sp_runtime::AccountId32};
+use subxt::{
+    rpc::ChainBlock,
+    sp_runtime::{traits::Header, AccountId32, Digest, DigestItem},
+    DefaultConfig,
+};
 
-#[derive(Debug)]
-pub struct AuthorityRecords<'a> {
+pub type AuthorityIndex = u32;
+
+pub fn decode_authority_index(chain_block: &ChainBlock<DefaultConfig>) -> Option<AuthorityIndex> {
+    match chain_block.block.header.digest() {
+        Digest { logs } => {
+            for digests in logs.iter() {
+                match digests {
+                    DigestItem::PreRuntime(_, data) => {
+                        if let Some(pre) = PreDigest::decode(&mut &data[..]).ok() {
+                            return Some(pre.authority_index());
+                        } else {
+                            return None;
+                        }
+                    }
+                    _ => (),
+                }
+            }
+        }
+    }
+    None
+}
+
+#[derive(Debug, Default)]
+pub struct AuthorityRecords {
     last_block: u32,
     current_session_index: u32,
     authorities: Vec<AccountId32>,
-    pub records: &'a mut BTreeMap<String, u32>,
+    pub records: BTreeMap<String, u32>,
 }
 
-impl<'a> AuthorityRecords<'a> {
-    pub fn new(records: &'a mut BTreeMap<String, u32>) -> Self {
+impl AuthorityRecords {
+    pub fn new() -> Self {
         Self {
             last_block: 0,
             current_session_index: 0,
             authorities: vec![],
-            records,
+            records: BTreeMap::new(),
         }
     }
 

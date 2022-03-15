@@ -27,8 +27,8 @@ use thiserror::Error;
 /// Scouty specific error messages
 #[derive(Error, Debug)]
 pub enum ScoutyError {
-    #[error("Substrate_subxt error: {0}")]
-    SubxtError(#[from] subxt::Error),
+    #[error("Subxt error: {0}")]
+    SubxtError(#[from] subxt::BasicError),
     #[error("Codec error: {0}")]
     CodecError(#[from] codec::Error),
     #[error("IO error: {0}")]

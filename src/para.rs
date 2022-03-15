@@ -26,18 +26,18 @@ use std::{collections::BTreeMap, convert::TryInto, result::Result, str::FromStr}
 use subxt::sp_runtime::AccountId32;
 
 #[derive(Debug)]
-pub struct ParaRecords<'a> {
+pub struct ParaRecords {
     current_session_index: u32,
     config_stashes: Vec<(AccountId32, u32)>,
-    pub records: &'a mut BTreeMap<String, bool>,
+    pub records: BTreeMap<String, bool>,
 }
 
-impl<'a> ParaRecords<'a> {
-    pub fn new(records: &'a mut BTreeMap<String, bool>) -> Self {
+impl ParaRecords {
+    pub fn new() -> Self {
         Self {
             current_session_index: 0,
             config_stashes: vec![],
-            records,
+            records: BTreeMap::new(),
         }
     }
 
