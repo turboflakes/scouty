@@ -35,7 +35,7 @@ use crate::report::{
 use crate::scouty::{get_account_id_from_storage_key, Scouty};
 use crate::stats;
 use async_recursion::async_recursion;
-use codec::{Decode, Encode};
+use codec::Encode;
 use futures::StreamExt;
 use log::{debug, info};
 use std::{collections::BTreeMap, convert::TryInto, result::Result, str::FromStr};

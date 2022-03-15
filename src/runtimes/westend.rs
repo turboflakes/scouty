@@ -23,19 +23,19 @@ use crate::authority::{decode_authority_index, AuthorityIndex, AuthorityRecords}
 use crate::config::CONFIG;
 use crate::errors::ScoutyError;
 use crate::hooks::{
-    Hook, HOOK_DEMOCRACY_STARTED, HOOK_INIT, HOOK_NEW_ERA, HOOK_NEW_SESSION,
+    Hook, HOOK_INIT, HOOK_NEW_ERA, HOOK_NEW_SESSION,
     HOOK_VALIDATOR_CHILLED, HOOK_VALIDATOR_OFFLINE, HOOK_VALIDATOR_SLASHED,
     HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA, HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA,
 };
 use crate::para::ParaRecords;
 use crate::report::{
-    Init, Network, Points, RawData, Referendum, Report, Section, Session, Slash, Validator,
+    Init, Network, Points, RawData, Report, Section, Session, Slash, Validator,
     Validators,
 };
 use crate::scouty::{get_account_id_from_storage_key, Scouty};
 use crate::stats;
 use async_recursion::async_recursion;
-use codec::{Decode, Encode};
+use codec::Encode;
 use futures::StreamExt;
 use log::{debug, info};
 use std::{collections::BTreeMap, convert::TryInto, result::Result, str::FromStr};
