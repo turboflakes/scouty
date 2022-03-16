@@ -47,10 +47,12 @@ use subxt::{
     runtime_metadata_path = "metadata/kusama_metadata.scale",
     generated_type_derives = "Clone, PartialEq"
 )]
+
 mod node_runtime {}
 
 use node_runtime::{
     democracy::events::Started, im_online::events::SomeOffline,
+    runtime_types::frame_support::storage::bounded_vec::BoundedVec,
     session::events::NewSession, staking::events::Chilled, staking::events::Slashed,
 };
 
@@ -885,7 +887,8 @@ async fn get_nominators(
         {
             for stash_str in config.stashes.iter() {
                 let stash = AccountId32::from_str(stash_str)?;
-                if nominations.targets.contains(&stash) {
+                let BoundedVec(targets) = nominations.targets.clone();
+                if targets.contains(&stash) {
                     if let Some(x) = stashes_nominators.get_mut(stash_str) {
                         x.push(nominator_stash.to_string());
                     }

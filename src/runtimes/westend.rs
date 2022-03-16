@@ -51,6 +51,7 @@ mod node_runtime {}
 
 use node_runtime::{
     im_online::events::SomeOffline, session::events::NewSession,
+    runtime_types::frame_support::storage::bounded_vec::BoundedVec,
     staking::events::Chilled, staking::events::Slashed,
 };
 
@@ -828,7 +829,8 @@ async fn get_nominators(
         {
             for stash_str in config.stashes.iter() {
                 let stash = AccountId32::from_str(stash_str)?;
-                if nominations.targets.contains(&stash) {
+                let BoundedVec(targets) = nominations.targets.clone();
+                if targets.contains(&stash) {
                     if let Some(x) = stashes_nominators.get_mut(stash_str) {
                         x.push(nominator_stash.to_string());
                     }

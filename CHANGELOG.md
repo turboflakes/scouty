@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - Update `subxt` crate dependency to latest commits on top of release v0.18.1
+- Fix external commands zombie processes
+- Update metadata Polkadot runtime/9170
+- Update metadata Kusama runtime/9170
+- Update metadata Westend runtime/9170
 
 ## [0.2.2] - 2021-02-01
 
