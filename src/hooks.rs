@@ -29,7 +29,8 @@ use std::{process::Command, process::Stdio, result::Result};
 pub const HOOK_INIT: &'static str = "Scouty initialized";
 pub const HOOK_NEW_SESSION: &'static str = "New session";
 pub const HOOK_NEW_ERA: &'static str = "New era";
-pub const HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA: &'static str = "Validator starts active next era";
+pub const HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA: &'static str =
+    "Validator starts active next era";
 pub const HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA: &'static str =
     "Validator starts inactive next era";
 pub const HOOK_VALIDATOR_SLASHED: &'static str = "Validator has been slashed";
@@ -50,42 +51,65 @@ pub struct Hook {
 }
 
 impl Hook {
-    pub fn try_run(name: &str, filename: &str, args: Vec<String>) -> Result<Hook, ScoutyError> {
+    pub fn try_run(
+        name: &str,
+        filename: &str,
+        args: Vec<String>,
+    ) -> Result<Hook, ScoutyError> {
         if Path::new(filename).exists() {
             info!("Run: {} {}", filename, args.join(" "));
 
-            let stdout = Command::new(filename)
+            let mut stdout_formatted: Vec<u8> = Vec::new();
+
+            let mut child = Command::new(filename)
                 .args(args)
+                .stderr(Stdio::piped())
                 .stdout(Stdio::piped())
-                .spawn()?
-                .stdout
-                .ok_or_else(|| {
-                    ScoutyError::Other(format!(
-                        "Hook script {} ({}) executed with error",
-                        name, filename
-                    ))
-                })?;
+                .spawn()?;
 
-            let mut output: Vec<u8> = Vec::new();
+            if let Some(child_stdout) = child.stdout.take() {
+                let reader = BufReader::new(child_stdout);
 
-            let reader = BufReader::new(stdout);
+                reader
+                    .lines()
+                    .filter_map(|line| line.ok())
+                    .for_each(|line| {
+                        info!("$ {}", line);
+                        stdout_formatted
+                            .extend(format!("{}\n", line).as_bytes().to_vec());
+                    });
 
-            reader
-                .lines()
-                .filter_map(|line| line.ok())
-                .for_each(|line| {
-                    info!("$ {}", line);
-                    output.extend(format!("{}\n", line).as_bytes().to_vec());
-                });
+                let output = child.wait_with_output()?;
 
-            Ok(Hook {
-                name: name.to_string(),
-                filename: filename.to_string(),
-                filename_exists: true,
-                stdout: output,
-            })
+                if output.status.success() {
+                    Ok(Hook {
+                        name: name.to_string(),
+                        filename: filename.to_string(),
+                        filename_exists: true,
+                        stdout: stdout_formatted,
+                    })
+                } else {
+                    let err = String::from_utf8(output.stderr)?;
+                    Err(ScoutyError::Other(format!(
+                        "Hook script - {} - filename ({}) executed with error: {:?}",
+                        name, filename, err
+                    )))
+                }
+            } else {
+                warn!(
+                    "Hook script - {} - filename ({}) child stdout could not be captured",
+                    name, filename
+                );
+                Err(ScoutyError::Other(format!(
+                    "Hook script - {} - filename ({}) child stdout could not be captured",
+                    name, filename
+                )))
+            }
         } else {
-            warn!("Hook script file * {} * not defined", name);
+            warn!(
+                "Hook script - {} - filename ({}) not defined",
+                name, filename
+            );
             Ok(Hook {
                 name: name.to_string(),
                 filename: filename.to_string(),
