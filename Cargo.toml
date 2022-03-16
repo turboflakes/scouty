@@ -8,6 +8,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+# scouty dependencies
 dotenv = "0.15"
 envy = "0.4"
 log = "0.4"
@@ -23,17 +24,11 @@ regex = "1.4.6"
 reqwest = { version = "0.11", features = ["json"] }
 url = "2.2.2"
 base64 = "0.13.0"
-rand = "0.8.4"
-quote = "1.0.10"
-
-# subxt = { package = "subxt", git = "https://github.com/turboflakes/subxt", rev = "bfeefda" }
-subxt = { git = "https://github.com/paritytech/subxt", rev = "798a1d0" }
-
-# Dependencies required since the changes on the new subxt package
 # NOTE: sp-consensus-babe is needed to be able to decode the authority index in the block header logs
 sp-consensus-babe = {version = "0.10.0-dev", git = "https://github.com/paritytech/substrate" }
-
-async-std = { version = "1.8.0", features = ["attributes", "tokio1"] }
+# subxt dependencies
+subxt = { git = "https://github.com/paritytech/subxt", rev = "8b19549" }
+async-std = { version = "1.9.0", features = ["attributes", "tokio1"] }
 env_logger = "0.9.0"
 futures = "0.3.13"
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive", "full", "bit-vec"] }

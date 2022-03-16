@@ -18,7 +18,7 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-
+#![allow(dead_code)]
 use crate::config::CONFIG;
 use crate::errors::MatrixError;
 use crate::runtimes::support::SupportedRuntime;
@@ -237,7 +237,10 @@ impl Matrix {
     }
 
     // Login user, get or create private room
-    pub async fn authenticate(&mut self, chain: SupportedRuntime) -> Result<(), MatrixError> {
+    pub async fn authenticate(
+        &mut self,
+        chain: SupportedRuntime,
+    ) -> Result<(), MatrixError> {
         if self.disabled {
             return Ok(());
         }
@@ -437,7 +440,10 @@ impl Matrix {
                     }
                     reqwest::StatusCode::TOO_MANY_REQUESTS => {
                         let response = res.json::<ErrorResponse>().await?;
-                        warn!("Matrix {} -> Wait 5 seconds and try again", response.error);
+                        warn!(
+                            "Matrix {} -> Wait 5 seconds and try again",
+                            response.error
+                        );
                         thread::sleep(time::Duration::from_secs(5));
                         return self
                             .dispatch_message(room_id, message, formatted_message)

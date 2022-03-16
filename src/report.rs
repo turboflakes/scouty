@@ -47,22 +47,24 @@ impl Network {
         let chain_name = client.rpc().system_chain().await?;
 
         // Get Token symbol
-        let token_symbol: String = if let Some(token_symbol) = properties.get("tokenSymbol") {
-            token_symbol.as_str().unwrap_or_default().to_string()
-        } else {
-            "ND".to_string()
-        };
+        let token_symbol: String =
+            if let Some(token_symbol) = properties.get("tokenSymbol") {
+                token_symbol.as_str().unwrap_or_default().to_string()
+            } else {
+                "ND".to_string()
+            };
 
         // Get Token decimals
-        let token_decimals: u8 = if let Some(token_decimals) = properties.get("tokenDecimals") {
-            token_decimals
-                .as_u64()
-                .unwrap_or_default()
-                .try_into()
-                .unwrap()
-        } else {
-            12
-        };
+        let token_decimals: u8 =
+            if let Some(token_decimals) = properties.get("tokenDecimals") {
+                token_decimals
+                    .as_u64()
+                    .unwrap_or_default()
+                    .try_into()
+                    .unwrap()
+            } else {
+                12
+            };
 
         Ok(Network {
             name: chain_name,
@@ -388,7 +390,10 @@ fn section_slash(report: &mut Report, data: RawData) -> &Report {
                 validator.name,
             ));
 
-            report.add_raw_text(format!("🤬 Slashed amount -> 💸 <b>{}</b>", slashed_amount,));
+            report.add_raw_text(format!(
+                "🤬 Slashed amount -> 💸 <b>{}</b>",
+                slashed_amount,
+            ));
         }
     }
 
@@ -439,7 +444,10 @@ fn section_chill(report: &mut Report, data: RawData) -> &Report {
 
             for hook in validator.hooks {
                 let exists_desc = if !hook.filename_exists { "❌" } else { "" };
-                report.add_text(format!("🪝 <code>{}</code> {}", hook.filename, exists_desc));
+                report.add_text(format!(
+                    "🪝 <code>{}</code> {}",
+                    hook.filename, exists_desc
+                ));
 
                 let raw_output = String::from_utf8(hook.stdout).unwrap();
                 // filter lines that start by special character '!'
@@ -479,7 +487,10 @@ fn section_offline(report: &mut Report, data: RawData) -> &Report {
 
             for hook in validator.hooks {
                 let exists_desc = if !hook.filename_exists { "❌" } else { "" };
-                report.add_text(format!("🪝 <code>{}</code> {}", hook.filename, exists_desc));
+                report.add_text(format!(
+                    "🪝 <code>{}</code> {}",
+                    hook.filename, exists_desc
+                ));
 
                 let raw_output = String::from_utf8(hook.stdout).unwrap();
                 // filter lines that start by special character '!'

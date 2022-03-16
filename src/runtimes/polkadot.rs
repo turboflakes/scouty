@@ -29,8 +29,8 @@ use crate::hooks::{
 };
 use crate::para::ParaRecords;
 use crate::report::{
-    Init, Network, Points, RawData, Referendum, Report, Section, Session, Slash, Validator,
-    Validators,
+    Init, Network, Points, RawData, Referendum, Report, Section, Session, Slash,
+    Validator, Validators,
 };
 use crate::scouty::{get_account_id_from_storage_key, Scouty};
 use crate::stats;
@@ -50,15 +50,17 @@ use subxt::{
 mod node_runtime {}
 
 use node_runtime::{
-    democracy::events::Started, im_online::events::SomeOffline, session::events::NewSession,
-    staking::events::Chilled, staking::events::Slashed,
+    democracy::events::Started, im_online::events::SomeOffline,
+    session::events::NewSession, staking::events::Chilled, staking::events::Slashed,
 };
 
 pub type Api = node_runtime::RuntimeApi<DefaultConfig, DefaultExtra<DefaultConfig>>;
 
 const ERAS_PER_DAY: u32 = 4;
 
-pub async fn init_and_subscribe_on_chain_events(scouty: &Scouty) -> Result<(), ScoutyError> {
+pub async fn init_and_subscribe_on_chain_events(
+    scouty: &Scouty,
+) -> Result<(), ScoutyError> {
     let client = scouty.client().clone();
     let api = client.to_runtime_api::<Api>();
 
@@ -202,8 +204,13 @@ async fn try_init_hook(
 
         if config.expose_nominators || config.expose_all {
             // get active nominators info
-            let (total_active_stake, own_stake, active_nominators, active_nominators_stake) =
-                get_active_nominators(&scouty, session.active_era_index, &v.stash).await?;
+            let (
+                total_active_stake,
+                own_stake,
+                active_nominators,
+                active_nominators_stake,
+            ) = get_active_nominators(&scouty, session.active_era_index, &v.stash)
+                .await?;
             // calculate APR
             let apr = calculate_projected_apr(
                 &scouty,
@@ -244,7 +251,8 @@ async fn try_init_hook(
         }
 
         if config.expose_total_nominators || config.expose_all {
-            if let Some(total_nominators) = total_nominators_map.get(&v.stash.to_string()) {
+            if let Some(total_nominators) = total_nominators_map.get(&v.stash.to_string())
+            {
                 args.push(total_nominators.join(",").to_string());
                 args.push("-".to_string());
             } else {
@@ -266,7 +274,8 @@ async fn try_init_hook(
         }
 
         if config.expose_era_points || config.expose_all {
-            let points = get_validator_points_info(&v.stash, era_reward_points.clone()).await?;
+            let points =
+                get_validator_points_info(&v.stash, era_reward_points.clone()).await?;
             args.push(points.validator.to_string());
             args.push(points.era_avg.to_string());
         } else {
@@ -493,7 +502,7 @@ async fn try_run_staking_slashed_hook(
         let slash = Slash {
             who: Some(event.0),
             amount_value: event.1,
-            hook: hook,
+            hook,
         };
 
         // Prepare notification report
@@ -614,7 +623,8 @@ async fn try_run_session_hooks(
         debug!("network {:?}", network);
 
         // Sync total nominators
-        let total_nominators_map = if config.expose_total_nominators || config.expose_all {
+        let total_nominators_map = if config.expose_total_nominators || config.expose_all
+        {
             get_nominators(&scouty).await?
         } else {
             BTreeMap::new()
@@ -669,7 +679,8 @@ async fn try_run_session_hooks(
 
             if config.expose_nominators || config.expose_all {
                 let (total_active_stake, own_stake, nominators, nominators_stake) =
-                    get_active_nominators(&scouty, session.active_era_index, &v.stash).await?;
+                    get_active_nominators(&scouty, session.active_era_index, &v.stash)
+                        .await?;
                 // calculate APR
                 let apr = calculate_projected_apr(
                     &scouty,
@@ -700,7 +711,8 @@ async fn try_run_session_hooks(
             }
 
             if config.expose_authored_blocks || config.expose_all {
-                let previous_session_total = authority_records.previous_session_total(&v.stash);
+                let previous_session_total =
+                    authority_records.previous_session_total(&v.stash);
                 let previous_six_sessions_total =
                     authority_records.previous_six_sessions_total(&v.stash);
                 args.push(previous_session_total.to_string());
@@ -711,7 +723,9 @@ async fn try_run_session_hooks(
             }
 
             if config.expose_total_nominators || config.expose_all {
-                if let Some(total_nominators) = total_nominators_map.get(&v.stash.to_string()) {
+                if let Some(total_nominators) =
+                    total_nominators_map.get(&v.stash.to_string())
+                {
                     args.push(total_nominators.join(",").to_string());
                     args.push("-".to_string());
                 }
@@ -744,7 +758,8 @@ async fn try_run_session_hooks(
                 // Expose validator last era points
                 if config.expose_era_points || config.expose_all {
                     let points =
-                        get_validator_points_info(&v.stash, era_reward_points.clone()).await?;
+                        get_validator_points_info(&v.stash, era_reward_points.clone())
+                            .await?;
                     args.push(points.validator.to_string());
                     args.push((points.era_avg as u32).to_string());
                 } else {
@@ -753,7 +768,8 @@ async fn try_run_session_hooks(
                 }
 
                 // Try run hook
-                let hook = Hook::try_run(HOOK_NEW_ERA, &config.hook_new_era_path, args.clone())?;
+                let hook =
+                    Hook::try_run(HOOK_NEW_ERA, &config.hook_new_era_path, args.clone())?;
                 v.hooks.push(hook);
             }
 
@@ -845,7 +861,9 @@ async fn get_active_nominators(
     Ok((exposure.total, exposure.own, nominators, nominators_stake))
 }
 
-async fn get_nominators(scouty: &Scouty) -> Result<BTreeMap<String, Vec<String>>, ScoutyError> {
+async fn get_nominators(
+    scouty: &Scouty,
+) -> Result<BTreeMap<String, Vec<String>>, ScoutyError> {
     let client = scouty.client().clone();
     let api = client.to_runtime_api::<Api>();
     let config = CONFIG.clone();
@@ -879,7 +897,10 @@ async fn get_nominators(scouty: &Scouty) -> Result<BTreeMap<String, Vec<String>>
     Ok(stashes_nominators)
 }
 
-async fn collect_session_data(scouty: &Scouty, session_index: u32) -> Result<Session, ScoutyError> {
+async fn collect_session_data(
+    scouty: &Scouty,
+    session_index: u32,
+) -> Result<Session, ScoutyError> {
     let client = scouty.client().clone();
     let api = client.to_runtime_api::<Api>();
 
@@ -911,14 +932,15 @@ async fn collect_session_data(scouty: &Scouty, session_index: u32) -> Result<Ses
     let eras_session_index = 1 + current_session_index - start_session_index;
 
     // Get session keys queued status
-    let queued_session_keys_changed = api.storage().session().queued_changed(None).await?;
+    let queued_session_keys_changed =
+        api.storage().session().queued_changed(None).await?;
 
     // Set network info
     let session = Session {
-        active_era_index: active_era_index,
-        current_session_index: current_session_index,
-        eras_session_index: eras_session_index,
-        queued_session_keys_changed: queued_session_keys_changed,
+        active_era_index,
+        current_session_index,
+        eras_session_index,
+        queued_session_keys_changed,
     };
     debug!("session {:?}", session);
 
@@ -1001,7 +1023,9 @@ async fn get_display_name(
     }
 }
 
-fn parse_identity_data(data: node_runtime::runtime_types::pallet_identity::types::Data) -> String {
+fn parse_identity_data(
+    data: node_runtime::runtime_types::pallet_identity::types::Data,
+) -> String {
     match data {
         node_runtime::runtime_types::pallet_identity::types::Data::Raw0(bytes) => {
             str(bytes.to_vec())
@@ -1176,7 +1200,11 @@ async fn track_para_records(
     // Parse Vec<ValidatorIndex> to Vec<u32>
     let active_validator_indices: Vec<u32> = para_validators
         .iter()
-        .map(|&node_runtime::runtime_types::polkadot_primitives::v0::ValidatorIndex(index)| index)
+        .map(
+            |&node_runtime::runtime_types::polkadot_primitives::v0::ValidatorIndex(
+                index,
+            )| index,
+        )
         .collect();
 
     // Insert record
@@ -1187,7 +1215,9 @@ async fn track_para_records(
 
 async fn get_validator_points_info(
     stash: &AccountId32,
-    era_reward_points: node_runtime::runtime_types::pallet_staking::EraRewardPoints<AccountId32>,
+    era_reward_points: node_runtime::runtime_types::pallet_staking::EraRewardPoints<
+        AccountId32,
+    >,
 ) -> Result<Points, ScoutyError> {
     let stash_points = match era_reward_points
         .individual
@@ -1231,15 +1261,17 @@ async fn calculate_projected_apr(
     // Get validator prefs
     let prefs = api.storage().staking().validators(stash, None).await?;
 
-    let node_runtime::runtime_types::sp_arithmetic::per_things::Perbill(c) = prefs.commission;
+    let node_runtime::runtime_types::sp_arithmetic::per_things::Perbill(c) =
+        prefs.commission;
     let commission = normalize_commission(c);
 
     let avg_reward_per_validator_per_era =
         from_plancks_to_ksm(token_decimals, era_reward) / total_active_validators as f64;
 
     let nominators_reward = (1.0 - commission) * avg_reward_per_validator_per_era;
-    let nominator_reward_per_ksm =
-        (1.0_f64 / from_plancks_to_ksm(token_decimals, stash_active_stake)) * nominators_reward;
+    let nominator_reward_per_ksm = (1.0_f64
+        / from_plancks_to_ksm(token_decimals, stash_active_stake))
+        * nominators_reward;
     let apr = nominator_reward_per_ksm * ERAS_PER_DAY as f64 * 365.0_f64;
     Ok(apr)
 }

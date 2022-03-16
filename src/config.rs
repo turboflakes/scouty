@@ -327,7 +327,8 @@ fn get_config() -> Config {
     match dotenv::from_filename(&config_path).ok() {
         Some(_) => info!("Loading configuration from {} file", &config_path),
         None => {
-            let config_path = env::var("SCOUTY_CONFIG_FILENAME").unwrap_or(".env".to_string());
+            let config_path =
+                env::var("SCOUTY_CONFIG_FILENAME").unwrap_or(".env".to_string());
             if let Some(_) = dotenv::from_filename(&config_path).ok() {
                 info!("Loading configuration from {} file", &config_path);
             }
@@ -403,28 +404,36 @@ fn get_config() -> Config {
         );
     }
 
-    if let Some(hook_validator_slashed_path) = matches.value_of("hook-validator-slashed-path") {
+    if let Some(hook_validator_slashed_path) =
+        matches.value_of("hook-validator-slashed-path")
+    {
         env::set_var(
             "SCOUTY_HOOK_VALIDATOR_SLASHED_PATH",
             hook_validator_slashed_path,
         );
     }
 
-    if let Some(hook_validator_chilled_path) = matches.value_of("hook-validator-chilled-path") {
+    if let Some(hook_validator_chilled_path) =
+        matches.value_of("hook-validator-chilled-path")
+    {
         env::set_var(
             "SCOUTY_HOOK_VALIDATOR_CHILLED_PATH",
             hook_validator_chilled_path,
         );
     }
 
-    if let Some(hook_validator_offline_path) = matches.value_of("hook-validator-offline-path") {
+    if let Some(hook_validator_offline_path) =
+        matches.value_of("hook-validator-offline-path")
+    {
         env::set_var(
             "SCOUTY_HOOK_VALIDATOR_OFFLINE_PATH",
             hook_validator_offline_path,
         );
     }
 
-    if let Some(hook_democracy_started_path) = matches.value_of("hook-democracy-started-path") {
+    if let Some(hook_democracy_started_path) =
+        matches.value_of("hook-democracy-started-path")
+    {
         env::set_var(
             "SCOUTY_HOOK_DEMOCRACY_STARTED_PATH",
             hook_democracy_started_path,

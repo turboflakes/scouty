@@ -33,7 +33,9 @@ use subxt::{
 
 pub type AuthorityIndex = u32;
 
-pub fn decode_authority_index(chain_block: &ChainBlock<DefaultConfig>) -> Option<AuthorityIndex> {
+pub fn decode_authority_index(
+    chain_block: &ChainBlock<DefaultConfig>,
+) -> Option<AuthorityIndex> {
     match chain_block.block.header.digest() {
         Digest { logs } => {
             for digests in logs.iter() {
@@ -97,7 +99,10 @@ impl AuthorityRecords {
                     for stash_str in config.stashes.iter() {
                         let stash = AccountId32::from_str(stash_str)?;
                         if author_stash == &stash {
-                            let key = format!("{}:{}", self.current_session_index, author_stash);
+                            let key = format!(
+                                "{}:{}",
+                                self.current_session_index, author_stash
+                            );
                             match self.records.get_mut(&key) {
                                 Some(record) => {
                                     *record += 1;

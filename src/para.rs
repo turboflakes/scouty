@@ -66,7 +66,11 @@ impl ParaRecords {
         Ok(())
     }
 
-    pub fn insert_record(&mut self, new_session_index: u32, active_validator_indices: Vec<u32>) {
+    pub fn insert_record(
+        &mut self,
+        new_session_index: u32,
+        active_validator_indices: Vec<u32>,
+    ) {
         if self.current_session_index != new_session_index {
             for (stash, index) in self.config_stashes.iter_mut() {
                 // Add new entry
