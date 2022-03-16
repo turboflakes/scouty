@@ -47,12 +47,13 @@ use subxt::{
     runtime_metadata_path = "metadata/westend_metadata.scale",
     generated_type_derives = "Clone, PartialEq"
 )]
+
 mod node_runtime {}
 
 use node_runtime::{
-    im_online::events::SomeOffline, session::events::NewSession,
+    im_online::events::SomeOffline,
     runtime_types::frame_support::storage::bounded_vec::BoundedVec,
-    staking::events::Chilled, staking::events::Slashed,
+    session::events::NewSession, staking::events::Chilled, staking::events::Slashed,
 };
 
 pub type Api = node_runtime::RuntimeApi<DefaultConfig, DefaultExtra<DefaultConfig>>;
@@ -110,10 +111,6 @@ pub async fn init_and_subscribe_on_chain_events(
                 let event = events.find_first::<SomeOffline>()?;
                 try_run_im_online_some_offline_hook(&scouty, event).await?;
 
-                // Event --> democracy::Started
-                // let event = events.find_first::<Started>()?;
-                // try_run_democracy_started_hook(&scouty, event).await?;
-
                 // Track authority record
                 authority_records.insert_record(block_number, Some(authority_index))?;
             }
@@ -146,8 +143,8 @@ async fn try_init_hook(
     let network = Network::load(client).await?;
     debug!("network {:?}", network);
 
-    // Sync total nominators
-    let total_nominators_map = if config.expose_total_nominators || config.expose_all {
+    // Sync all nominators
+    let all_nominators_map = if config.expose_all_nominators || config.expose_all {
         get_nominators(&scouty).await?
     } else {
         BTreeMap::new()
@@ -251,10 +248,9 @@ async fn try_init_hook(
             args.push("-".to_string());
         }
 
-        if config.expose_total_nominators || config.expose_all {
-            if let Some(total_nominators) = total_nominators_map.get(&v.stash.to_string())
-            {
-                args.push(total_nominators.join(",").to_string());
+        if config.expose_all_nominators || config.expose_all {
+            if let Some(all_nominators) = all_nominators_map.get(&v.stash.to_string()) {
+                args.push(all_nominators.join(",").to_string());
                 args.push("-".to_string());
             } else {
                 args.push("-".to_string());
@@ -566,9 +562,8 @@ async fn try_run_session_hooks(
         let network = Network::load(client).await?;
         debug!("network {:?}", network);
 
-        // Sync total nominators
-        let total_nominators_map = if config.expose_total_nominators || config.expose_all
-        {
+        // Sync all nominators
+        let all_nominators_map = if config.expose_all_nominators || config.expose_all {
             get_nominators(&scouty).await?
         } else {
             BTreeMap::new()
@@ -666,11 +661,10 @@ async fn try_run_session_hooks(
                 args.push("-".to_string());
             }
 
-            if config.expose_total_nominators || config.expose_all {
-                if let Some(total_nominators) =
-                    total_nominators_map.get(&v.stash.to_string())
+            if config.expose_all_nominators || config.expose_all {
+                if let Some(all_nominators) = all_nominators_map.get(&v.stash.to_string())
                 {
-                    args.push(total_nominators.join(",").to_string());
+                    args.push(all_nominators.join(",").to_string());
                     args.push("-".to_string());
                 }
             } else {
@@ -817,7 +811,7 @@ async fn get_nominators(
         stashes_nominators.insert(stash.to_string(), vec![]);
     }
 
-    info!("Starting Total Nominators - sync");
+    info!("Starting All Nominators - sync");
     let mut nominators = api.storage().staking().nominators_iter(None).await?;
     while let Some((key, nominations)) = nominators.next().await? {
         let nominator_stash = get_account_id_from_storage_key(key);
@@ -838,7 +832,7 @@ async fn get_nominators(
             }
         }
     }
-    info!("Finished Total Nominators - sync");
+    info!("Finished All Nominators - sync");
     Ok(stashes_nominators)
 }
 

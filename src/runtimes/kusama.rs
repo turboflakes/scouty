@@ -147,8 +147,8 @@ async fn try_init_hook(
     let network = Network::load(client).await?;
     debug!("network {:?}", network);
 
-    // Sync total nominators
-    let total_nominators_map = if config.expose_total_nominators || config.expose_all {
+    // Sync all nominators
+    let all_nominators_map = if config.expose_all_nominators || config.expose_all {
         get_nominators(&scouty).await?
     } else {
         BTreeMap::new()
@@ -252,10 +252,9 @@ async fn try_init_hook(
             args.push("-".to_string());
         }
 
-        if config.expose_total_nominators || config.expose_all {
-            if let Some(total_nominators) = total_nominators_map.get(&v.stash.to_string())
-            {
-                args.push(total_nominators.join(",").to_string());
+        if config.expose_all_nominators || config.expose_all {
+            if let Some(all_nominators) = all_nominators_map.get(&v.stash.to_string()) {
+                args.push(all_nominators.join(",").to_string());
                 args.push("-".to_string());
             } else {
                 args.push("-".to_string());
@@ -624,9 +623,8 @@ async fn try_run_session_hooks(
         let network = Network::load(client).await?;
         debug!("network {:?}", network);
 
-        // Sync total nominators
-        let total_nominators_map = if config.expose_total_nominators || config.expose_all
-        {
+        // Sync all nominators
+        let all_nominators_map = if config.expose_all_nominators || config.expose_all {
             get_nominators(&scouty).await?
         } else {
             BTreeMap::new()
@@ -724,11 +722,10 @@ async fn try_run_session_hooks(
                 args.push("-".to_string());
             }
 
-            if config.expose_total_nominators || config.expose_all {
-                if let Some(total_nominators) =
-                    total_nominators_map.get(&v.stash.to_string())
+            if config.expose_all_nominators || config.expose_all {
+                if let Some(all_nominators) = all_nominators_map.get(&v.stash.to_string())
                 {
-                    args.push(total_nominators.join(",").to_string());
+                    args.push(all_nominators.join(",").to_string());
                     args.push("-".to_string());
                 }
             } else {
@@ -875,7 +872,7 @@ async fn get_nominators(
         stashes_nominators.insert(stash.to_string(), vec![]);
     }
 
-    info!("Starting Total Nominators - sync");
+    info!("Starting All Nominators - sync");
     let mut nominators = api.storage().staking().nominators_iter(None).await?;
     while let Some((key, nominations)) = nominators.next().await? {
         let nominator_stash = get_account_id_from_storage_key(key);
@@ -896,7 +893,7 @@ async fn get_nominators(
             }
         }
     }
-    info!("Finished Total Nominators - sync");
+    info!("Finished All Nominators - sync");
     Ok(stashes_nominators)
 }
 

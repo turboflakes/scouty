@@ -102,7 +102,7 @@ pub struct Config {
     #[serde(default)]
     pub expose_authored_blocks: bool,
     #[serde(default)]
-    pub expose_total_nominators: bool,
+    pub expose_all_nominators: bool,
     #[serde(default)]
     pub expose_para_validator: bool,
     #[serde(default)]
@@ -209,7 +209,7 @@ fn get_config() -> Config {
       Arg::with_name("expose-nominators")
         .long("expose-nominators")
         .help(
-          "Expose the nominator details under new positional arguments for some of the hooks. Note: `scouty` only look after active nominators for each validator stash predefined.",
+          "Expose ACTIVE nominator details under new positional arguments for some of the hooks. Note: `scouty` only look after active nominators for each validator stash predefined.",
         ),
       )
     .arg(
@@ -220,24 +220,24 @@ fn get_config() -> Config {
           ),
         )
     .arg(
-      Arg::with_name("expose-total-nominators")
-        .long("expose-total-nominators")
+      Arg::with_name("expose-all-nominators")
+        .long("expose-all-nominators")
         .help(
-          "Expose the total nominator details under new positional arguments for some of the hooks. Note: `scouty` only look after total nominators for each validator stash predefined.",
+          "Expose ALL nominator details under new positional arguments for some of the hooks. Note: `scouty` only look after all nominators for each validator stash predefined.",
         ),
       )
     .arg(
       Arg::with_name("expose-para-validator")
         .long("expose-para-validator")
         .help(
-          "Expose the para validator details under new positional arguments for some of the hooks. Note: `scouty` only look after total nominators for each validator stash predefined.",
+          "Expose the para validator details under new positional arguments for some of the hooks.",
         ),
       )
     .arg(
       Arg::with_name("expose-era-points")
         .long("expose-era-points")
         .help(
-          "Expose the era points details under new positional arguments for the `_new_era` hook. Note: `scouty` only look after total nominators for each validator stash predefined.",
+          "Expose the era points details under new positional arguments for the `_new_era` hook.",
         ),
       )
     .arg(
@@ -452,12 +452,12 @@ fn get_config() -> Config {
         env::set_var("SCOUTY_EXPOSE_NOMINATORS", "true");
     }
 
-    if matches.is_present("expose-authored-blocks") {
-        env::set_var("SCOUTY_EXPOSE_AUTHORED_BLOCKS", "true");
+    if matches.is_present("expose-all-nominators") {
+        env::set_var("SCOUTY_EXPOSE_ALL_NOMINATORS", "true");
     }
 
-    if matches.is_present("expose-total-nominators") {
-        env::set_var("SCOUTY_EXPOSE_TOTAL_NOMINATORS", "true");
+    if matches.is_present("expose-authored-blocks") {
+        env::set_var("SCOUTY_EXPOSE_AUTHORED_BLOCKS", "true");
     }
 
     if matches.is_present("expose-para-validator") {

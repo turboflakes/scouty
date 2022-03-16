@@ -27,7 +27,7 @@
 # 17th - Number of Authored blocks (Session - 1) (--expose-authored-blocks flag must be set)
 # 18th - Not applicable
 #
-# 19th - Total Nominators stashes [stash_1, stash_2, ..] (--expose-total-nominators flag must be set)
+# 19th - All Nominators stashes [stash_1, stash_2, ..] (--expose-all-nominators flag must be set)
 #
 # > Special character '!' controls message visibility on Matrix (Element)
 # Any message that starts with '!' will be sent to Matrix, to the user private room
@@ -58,7 +58,7 @@ echo "! (15th) - Active Nominators -> ${15}"
 echo "! (16th) - Active Nominators Stake -> ${16}"
 echo "! (17th) - Number of Authored blocks in current Session -> ${17}"
 echo "! (18th) - NA"
-echo "! (19th) - Total Nominators -> ${19}"
+echo "! (19th) - All Nominators -> ${19}"
 echo "! -------------------------------"
 if [ "$4" = "true" ]
 then

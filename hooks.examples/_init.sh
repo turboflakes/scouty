@@ -28,7 +28,7 @@
 # 18th - Number of Authored blocks (Session - 1) (--expose-authored-blocks flag must be set)
 # 19th - Not applicable
 #
-# 20th - Total Nominators stashes [stash_1, stash_2, ..] (--expose-total-nominators flag must be set)
+# 20th - All Nominators stashes [stash_1, stash_2, ..] (--expose-all-nominators flag must be set)
 # 21th - Not applicable
 #
 # 22th - Is Para validator? (true/false) (--expose-para-validator flag must be set)
@@ -67,7 +67,7 @@
 # echo "! (17th) - Active Nominators Stake -> ${17}"
 # echo "! (18th) - Number of Authored blocks in current Session -> ${18}"
 # echo "! (19th) - NA"
-# echo "! (20th) - Total Nominators -> ${20}"
+# echo "! (20th) - All Nominators -> ${20}"
 # echo "! (21th) - NA"
 # echo "! (22th) - Is Para Validator? -> ${22}"
 # echo "! (23th) - Number of Para Validator times in previous 6 Sessions -> ${23}"
@@ -90,11 +90,11 @@ then
   # Nominators and Stake
   # Convert nominators string "stash_1,stash_2" to an array ("stash_1" "stash_2")
   NOMINATORS=(${16//,/ })
-  TOTAL_NOMINATORS=(${20//,/ })
-  echo "! 🦸 Nominators: ${#NOMINATORS[@]}/${#TOTAL_NOMINATORS[@]}"
+  ALL_NOMINATORS=(${20//,/ })
+  echo "! 🦸 Nominators: ${#NOMINATORS[@]}/${#ALL_NOMINATORS[@]}"
   # 1kv nominators check
   FILENAME="$(dirname $0)/1kv/check_1kv_nominators.sh"
-  $FILENAME $4 ${16} ${20}
+  $FILENAME ${10} ${4} ${16} ${20}
   #
   TOTAL_ACTIVE_STAKE=$((${14}/(10**${12})))
   echo "! 💸 Active stake: $TOTAL_ACTIVE_STAKE ${11}"
@@ -110,12 +110,12 @@ then
   #
 else 
   # Nominators and Stake
-  TOTAL_NOMINATORS=(${20//,/ })
-  echo "! 🦸 Inactive Nominators: ${#TOTAL_NOMINATORS[@]}"
+  ALL_NOMINATORS=(${20//,/ })
+  echo "! 🦸 Inactive Nominators: ${#ALL_NOMINATORS[@]}"
   #
   # 1kv nominators check
   FILENAME="$(dirname $0)/1kv/check_1kv_nominators.sh"
-  $FILENAME $4 "-" ${20}
+  $FILENAME ${10} ${4} "-" ${20}
 fi
 # System metrics
 # echo "! ----"

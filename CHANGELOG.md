@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update `subxt` crate dependency to latest commits on top of release v0.18.1
 - Fix external commands zombie processes
+- Rename `--expose-total-nominators` flag to `--expose-all-nominators` and rename all `TOTAL_NOMINATORS` variables to `ALL_NOMINATORS` in all bash scripts
+- Fix `check_1kv_nominators.sh` - expose chain name as a new input variable to fetch nominators from the respective 1KV backend api
 - Update metadata Polkadot runtime/9170
 - Update metadata Kusama runtime/9170
 - Update metadata Westend runtime/9170
