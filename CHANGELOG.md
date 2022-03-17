@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2021-03-17
+
+### Changed
+
 - Update `subxt` crate dependency to latest commits on top of release v0.18.1
 - Fix external commands zombie processes
 - Rename `--expose-total-nominators` flag to `--expose-all-nominators` and rename all `TOTAL_NOMINATORS` variables to `ALL_NOMINATORS` in all bash scripts
