@@ -40,7 +40,8 @@ use futures::StreamExt;
 use log::{debug, info};
 use std::{collections::BTreeMap, convert::TryInto, result::Result, str::FromStr};
 use subxt::{
-    sp_core::hexdisplay::HexDisplay, sp_runtime::AccountId32, DefaultConfig, PolkadotExtrinsicParams,
+    sp_core::hexdisplay::HexDisplay, sp_runtime::AccountId32, DefaultConfig,
+    PolkadotExtrinsicParams,
 };
 
 #[subxt::subxt(
@@ -55,7 +56,8 @@ use node_runtime::{
     session::events::NewSession, staking::events::Chilled, staking::events::Slashed,
 };
 
-pub type Api = node_runtime::RuntimeApi<DefaultConfig, PolkadotExtrinsicParams<DefaultConfig>>;
+pub type Api =
+    node_runtime::RuntimeApi<DefaultConfig, PolkadotExtrinsicParams<DefaultConfig>>;
 
 const ERAS_PER_DAY: u32 = 4;
 
@@ -807,14 +809,6 @@ async fn try_run_session_hooks(
                 // Try HOOK_VALIDATOR_INACTIVE_NEXT_ERA
                 // If stash is active and keys are not queued for next Era trigger hook to inform operator
                 if v.is_active && !v.is_queued {
-                    let args = vec![
-                        v.stash.to_string(),
-                        v.name.to_string(),
-                        format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
-                        format!("{}", next_era_index),
-                        format!("{}", next_session_index),
-                    ];
-
                     // Try run hook
                     let hook = Hook::try_run(
                         HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA,

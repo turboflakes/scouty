@@ -40,7 +40,8 @@ use futures::StreamExt;
 use log::{debug, info};
 use std::{collections::BTreeMap, convert::TryInto, result::Result, str::FromStr};
 use subxt::{
-    sp_core::hexdisplay::HexDisplay, sp_runtime::AccountId32, DefaultConfig, PolkadotExtrinsicParams,
+    sp_core::hexdisplay::HexDisplay, sp_runtime::AccountId32, DefaultConfig,
+    PolkadotExtrinsicParams,
 };
 
 #[subxt::subxt(
@@ -56,7 +57,8 @@ use node_runtime::{
     session::events::NewSession, staking::events::Chilled, staking::events::Slashed,
 };
 
-pub type Api = node_runtime::RuntimeApi<DefaultConfig, PolkadotExtrinsicParams<DefaultConfig>>;
+pub type Api =
+    node_runtime::RuntimeApi<DefaultConfig, PolkadotExtrinsicParams<DefaultConfig>>;
 
 const ERAS_PER_DAY: u32 = 4;
 
