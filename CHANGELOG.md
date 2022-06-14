@@ -7,10 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.3.1] - 2021-06-13
+## [0.3.1] - 2021-06-14
 
 ### Changed
 
+- Aff network details to `_validator_starts_active_next_era` and `_validator_starts_inactive_next_era` scripts
 - Update metadata Polkadot runtime/9220
 - Update metadata Kusama runtime/9230
 - Update metadata Westend runtime/9230
