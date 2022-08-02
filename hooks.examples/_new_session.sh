@@ -29,7 +29,7 @@
 # 19th - Number of Authored blocks in previous 6 Sessions (--expose-authored-blocks flag must be set)
 #
 # 20th - All Nominators stashes [stash_1, stash_2, ..] (--expose-all-nominators flag must be set)
-# 21th - Not applicable
+# 21th - Total nominators stake and Raw distribution stake per nominee [total_nominators_stake, raw_distribution_stake] (--expose-all-nominators flag must be set)
 #
 # 22th - Is Para validator? (true/false) (--expose-para-validator flag must be set)
 # 23th - Number of Para validator times in previous 6 Sessions (--expose-para-validator flag must be set)
@@ -64,8 +64,8 @@
 # echo "! (17th) - Active Nominators Stake -> ${17}"
 # echo "! (18th) - Number of Authored blocks in previous Session -> ${18}"
 # echo "! (19th) - Number of Authored blocks in previous 6 Sessions -> ${19}"
-# echo "! (20th) - All Nominators -> ${20}"
-# echo "! (21th) - NA"
+# echo "! (20th) - All Nominators stashes -> ${20}"
+# echo "! (21th) - Total Nominators Stake, Raw distribution stake per nominee -> ${21}"
 # echo "! (22th) - Is Para Validator? -> ${22}"
 # echo "! (23th) - Number of Para Validator times in previous 6 Sessions -> ${23}"
 # echo "! -------------------------------"
@@ -87,6 +87,14 @@ then
     FILENAME="$(dirname $0)/1kv/check_1kv_nominators.sh"
     $FILENAME ${10} ${4} ${16} ${20}
   fi
+  # 
+  # Total Nominators stake
+  # Convert total nominators stake and raw stake per nominee "total_nominators_stake,raw_stake" to an array ("total_nominators_stake" "raw_stake")
+  NOMINATORS_STAKES=(${21//,/ })
+  TOTAL_NOMINATORS_STAKE=$((${NOMINATORS_STAKES[0]}/(10**${12})))
+  RAW_NOMINEES_STAKE=$((${NOMINATORS_STAKES[1]}/(10**${12})))
+  echo "! 🍣 Raw stake: ${RAW_NOMINEES_STAKE}/${TOTAL_NOMINATORS_STAKE} ${11}"
+  # 
   # Para Validator
   if [ "${22}" = "true" ]
   then
@@ -102,6 +110,13 @@ else
   # 1kv nominators check
   FILENAME="$(dirname $0)/1kv/check_1kv_nominators.sh"
   $FILENAME ${10} ${4} "-" ${20}
+  #
+  # Total Nominators stake
+  # Convert total nominators stake and raw stake per nominee "total_nominators_stake,raw_stake" to an array ("total_nominators_stake" "raw_stake")
+  NOMINATORS_STAKES=(${21//,/ })
+  TOTAL_NOMINATORS_STAKE=$((${NOMINATORS_STAKES[0]}/(10**${12})))
+  RAW_NOMINEES_STAKE=$((${NOMINATORS_STAKES[1]}/(10**${12})))
+  echo "! 🍣 Raw stake: ${RAW_NOMINEES_STAKE}/${TOTAL_NOMINATORS_STAKE} ${11}"
   #
 fi
 # System metrics

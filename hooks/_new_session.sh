@@ -12,22 +12,27 @@
 # 6th - Era
 # 7th - Session
 # 8th - Eras session index [1,2,3,4,5,6]
-# 9th - To Be Defined (TBD)
+# 9th - Event block number
 #
 # The following arguments depend on exposed flags
 # 10th - Network name (--expose-network flag must be set)
 # 11th - Network token symbol (--expose-network flag must be set)
 # 12th - Network token decimals (--expose-network flag must be set)
 
-# 13th - Validator Total stake (--expose-nominators flag must be set)
-# 14th - Validator Own stake (--expose-nominators flag must be set)
-# 15th - Active Nominators stashes [stash_1, stash_2, ..] (--expose-nominators flag must be set)
-# 16th - Active Nominators stakes [stake_1, stake_2, ..] (--expose-nominators flag must be set)
+# 13th - Projected APR (same calculation as in polkadot.js) (--expose-nominators flag must be set)
+# 14th - Validator Total stake (--expose-nominators flag must be set)
+# 15th - Validator Own stake (--expose-nominators flag must be set)
+# 16th - Active Nominators stashes [stash_1, stash_2, ..] (--expose-nominators flag must be set)
+# 17th - Active Nominators stakes [stake_1, stake_2, ..] (--expose-nominators flag must be set)
 #
-# 17th - Number of Authored blocks in previous Session (--expose-authored-blocks flag must be set)
-# 18th - Number of Authored blocks in previous 6 Sessions (--expose-authored-blocks flag must be set)
+# 18th - Number of Authored blocks in previous Session (--expose-authored-blocks flag must be set)
+# 19th - Number of Authored blocks in previous 6 Sessions (--expose-authored-blocks flag must be set)
 #
-# 19th - All Nominators stashes [stash_1, stash_2, ..] (--expose-all-nominators flag must be set)
+# 20th - All Nominators stashes [stash_1, stash_2, ..] (--expose-all-nominators flag must be set)
+# 21th - Total nominators stake and Raw distribution stake per nominee [total_nominators_stake, raw_distribution_stake] (--expose-all-nominators flag must be set)
+#
+# 22th - Is Para validator? (true/false) (--expose-para-validator flag must be set)
+# 23th - Number of Para validator times in previous 6 Sessions (--expose-para-validator flag must be set)
 #
 # > Special character '!' controls message visibility on Matrix (Element)
 # Any message that starts with '!' will be sent to Matrix, to the user private room

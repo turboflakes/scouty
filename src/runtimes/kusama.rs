@@ -255,8 +255,19 @@ async fn try_init_hook(
 
         if config.expose_all_nominators || config.expose_all {
             if let Some(all_nominators) = all_nominators_map.get(&v.stash.to_string()) {
-                args.push(all_nominators.join(",").to_string());
-                args.push("-".to_string());
+                let all_nominators_stashes = all_nominators
+                    .iter()
+                    .map(|(x, _, _)| x.to_string())
+                    .collect::<Vec<String>>()
+                    .join(",");
+
+                let total_nominators_stake: u128 =
+                    all_nominators.iter().map(|(_, x, _)| x).sum();
+
+                let raw_nominees_stake: u128 =
+                    all_nominators.iter().map(|(_, x, y)| x / *y as u128).sum();
+                args.push(all_nominators_stashes.to_string());
+                args.push(format!("{},{}", total_nominators_stake, raw_nominees_stake));
             } else {
                 args.push("-".to_string());
                 args.push("-".to_string());
@@ -726,8 +737,24 @@ async fn try_run_session_hooks(
             if config.expose_all_nominators || config.expose_all {
                 if let Some(all_nominators) = all_nominators_map.get(&v.stash.to_string())
                 {
-                    args.push(all_nominators.join(",").to_string());
                     args.push("-".to_string());
+                    args.push("-".to_string());
+                    let all_nominators_stashes = all_nominators
+                        .iter()
+                        .map(|(x, _, _)| x.to_string())
+                        .collect::<Vec<String>>()
+                        .join(",");
+
+                    let total_nominators_stake: u128 =
+                        all_nominators.iter().map(|(_, x, _)| x).sum();
+
+                    let raw_nominees_stake: u128 =
+                        all_nominators.iter().map(|(_, x, y)| x / *y as u128).sum();
+                    args.push(all_nominators_stashes.to_string());
+                    args.push(format!(
+                        "{},{}",
+                        total_nominators_stake, raw_nominees_stake
+                    ));
                 }
             } else {
                 args.push("-".to_string());
@@ -865,12 +892,14 @@ async fn get_active_nominators(
 
 async fn get_nominators(
     scouty: &Scouty,
-) -> Result<BTreeMap<String, Vec<String>>, ScoutyError> {
+) -> Result<BTreeMap<String, Vec<(String, u128, u32)>>, ScoutyError> {
     let client = scouty.client().clone();
     let api = client.to_runtime_api::<Api>();
     let config = CONFIG.clone();
 
-    let mut stashes_nominators: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    // BTreeMap<String, Vec<(String, u128, u32)>> = validator_stash : [(nominator_stash, nominator_total_stake, number_of_nominations)]
+    let mut stashes_nominators: BTreeMap<String, Vec<(String, u128, u32)>> =
+        BTreeMap::new();
     for stash in config.stashes.iter() {
         stashes_nominators.insert(stash.to_string(), vec![]);
     }
@@ -879,18 +908,29 @@ async fn get_nominators(
     let mut nominators = api.storage().staking().nominators_iter(None).await?;
     while let Some((key, nominations)) = nominators.next().await? {
         let nominator_stash = get_account_id_from_storage_key(key);
-        if let Some(_controller) = api
+        if let Some(controller) = api
             .storage()
             .staking()
             .bonded(&nominator_stash, None)
             .await?
         {
+            let total_nominator_stake = if let Some(ledger) =
+                api.storage().staking().ledger(&controller, None).await?
+            {
+                ledger.total
+            } else {
+                0
+            };
             for stash_str in config.stashes.iter() {
                 let stash = AccountId32::from_str(stash_str)?;
                 let BoundedVec(targets) = nominations.targets.clone();
                 if targets.contains(&stash) {
                     if let Some(x) = stashes_nominators.get_mut(stash_str) {
-                        x.push(nominator_stash.to_string());
+                        x.push((
+                            nominator_stash.to_string(),
+                            total_nominator_stake,
+                            targets.len().try_into().unwrap(),
+                        ));
                     }
                 }
             }
