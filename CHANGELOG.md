@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.3.1] - 2021-06-14
+## [0.3.2] - 2022-08-02
+
+### Added
+
+- Total nominators stake and raw stake per nominee to `_init` and `_new_session` scripts
+
+## [0.3.1] - 2022-06-14
 
 ### Changed
 
@@ -16,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update metadata Kusama runtime/9230
 - Update metadata Westend runtime/9230
 
-## [0.3.0] - 2021-03-17
+## [0.3.0] - 2022-03-17
 
 ### Changed
 
@@ -28,20 +34,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update metadata Kusama runtime/9170
 - Update metadata Westend runtime/9170
 
-## [0.2.2] - 2021-02-01
+## [0.2.2] - 2022-02-01
 
 ### Changed
 
 - Rename block height to block grift in examples script
 - Fix APR value to be displayed as percentage
 
-## [0.2.1] - 2021-01-31
+## [0.2.1] - 2022-01-31
 
 ### Changed
 
 - Fix Project APR missing from `_new_session` and `_new_era` hooks
 
-## [0.2.0] - 2021-01-31
+## [0.2.0] - 2022-01-31
 
 ### Added
 
@@ -57,13 +63,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adjusted 1KV nominators message
 - Breaking change: With the addition of the APR at position `${13}` all next arguments have shift their position by +1.
 
-## [0.1.25] - 2021-01-24
+## [0.1.25] - 2022-01-24
 
 ### Changed
 
 - Fix parity default endpoints
 
-## [0.1.24] - 2021-01-24
+## [0.1.24] - 2022-01-24
 
 ### Added
 
@@ -75,7 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Review sripts to fit total nominators and give a better readability
 - Update metadata Polkadot runtime/9151
 
-## [0.1.23] - 2021-01-22
+## [0.1.23] - 2022-01-22
 
 ### Added
 
@@ -85,31 +91,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix Authored blocks
 
-## [0.1.22] - 2021-01-18
+## [0.1.22] - 2022-01-18
 
 ### Changed
 
 - Fix TBD argument at new session and new era hook scripts
 
-## [0.1.21] - 2021-01-18
+## [0.1.21] - 2022-01-18
 
 ### Changed
 
 - Update metadata Kusama runtime/9151
 
-## [0.1.20] - 2021-01-18
+## [0.1.20] - 2022-01-18
 
 ### Changed
 
 - Fix default values for optional flags. This makes it less error prone when working with scripts arguments.
 
-## [0.1.19] - 2021-01-18
+## [0.1.19] - 2022-01-18
 
 ### Added 
 
 - Add flag `--expose-authored-blocks` which exposes the number of blocks authored by the predefined stashes
 
-## [0.1.18] - 2021-01-17
+## [0.1.18] - 2022-01-17
 
 ### Added 
 
@@ -120,7 +126,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - expose total stake, own stake, nominators and nominators stake to some of the hooks
 - update positional arguments in the default default scripts
 
-## [0.1.17] - 2021-01-16
+## [0.1.17] - 2022-01-16
 
 ### Added
 
@@ -130,13 +136,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix parameter expansion for queued session argument in scripts
 
-## [0.1.16] - 2021-01-15
+## [0.1.16] - 2022-01-15
 
 ### Changed
 
 - Fix offline event
 
-## [0.1.14] - 2021-01-15
+## [0.1.14] - 2022-01-15
 
 ### Added
 
