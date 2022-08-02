@@ -737,8 +737,6 @@ async fn try_run_session_hooks(
             if config.expose_all_nominators || config.expose_all {
                 if let Some(all_nominators) = all_nominators_map.get(&v.stash.to_string())
                 {
-                    args.push("-".to_string());
-                    args.push("-".to_string());
                     let all_nominators_stashes = all_nominators
                         .iter()
                         .map(|(x, _, _)| x.to_string())
