@@ -24,11 +24,8 @@ regex = "1.4.6"
 reqwest = { version = "0.11", features = ["json"] }
 url = "2.2.2"
 base64 = "0.13.0"
-# NOTE: sp-consensus-babe is needed to be able to decode the authority index in the block header logs
-sp-consensus-babe = {version = "0.10.0-dev", git = "https://github.com/paritytech/substrate" }
 # subxt dependencies
-#subxt = { git = "https://github.com/paritytech/subxt", rev = "8b19549" }
-subxt = { rev = "6d731725", git = "https://github.com/paritytech/subxt" }
+subxt = "0.22.0"
 async-std = { version = "1.9.0", features = ["attributes", "tokio1"] }
 env_logger = "0.9.0"
 futures = "0.3.13"

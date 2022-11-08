@@ -21,39 +21,11 @@
 
 use crate::config::CONFIG;
 use crate::errors::ScoutyError;
-use codec::Decode;
 use log::debug;
-use sp_consensus_babe::digests::PreDigest;
 use std::{collections::BTreeMap, convert::TryInto, result::Result, str::FromStr};
-use subxt::{
-    rpc::ChainBlock,
-    sp_runtime::{traits::Header, AccountId32, Digest, DigestItem},
-    DefaultConfig,
-};
+use subxt::sp_runtime::AccountId32;
 
 pub type AuthorityIndex = u32;
-
-pub fn decode_authority_index(
-    chain_block: &ChainBlock<DefaultConfig>,
-) -> Option<AuthorityIndex> {
-    match chain_block.block.header.digest() {
-        Digest { logs } => {
-            for digests in logs.iter() {
-                match digests {
-                    DigestItem::PreRuntime(_, data) => {
-                        if let Some(pre) = PreDigest::decode(&mut &data[..]).ok() {
-                            return Some(pre.authority_index());
-                        } else {
-                            return None;
-                        }
-                    }
-                    _ => (),
-                }
-            }
-        }
-    }
-    None
-}
 
 #[derive(Debug, Default)]
 pub struct AuthorityRecords {

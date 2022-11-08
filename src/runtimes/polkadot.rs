@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-use crate::authority::{decode_authority_index, AuthorityIndex, AuthorityRecords};
+use crate::authority::{AuthorityIndex, AuthorityRecords};
 use crate::config::CONFIG;
 use crate::errors::ScoutyError;
 use crate::hooks::{
@@ -35,13 +35,14 @@ use crate::report::{
 use crate::scouty::{get_account_id_from_storage_key, Scouty};
 use crate::stats;
 use async_recursion::async_recursion;
-use codec::Encode;
+use codec::{Decode, Encode};
 use futures::StreamExt;
 use log::{debug, info};
 use std::{collections::BTreeMap, convert::TryInto, result::Result, str::FromStr};
 use subxt::{
-    sp_core::hexdisplay::HexDisplay, sp_runtime::AccountId32, DefaultConfig,
-    PolkadotExtrinsicParams,
+    sp_core::{hexdisplay::HexDisplay, H256},
+    sp_runtime::{AccountId32, Digest, DigestItem},
+    DefaultConfig, PolkadotExtrinsicParams,
 };
 
 #[subxt::subxt(
@@ -51,9 +52,15 @@ use subxt::{
 mod node_runtime {}
 
 use node_runtime::{
-    democracy::events::Started, im_online::events::SomeOffline,
-    runtime_types::sp_runtime::bounded::bounded_vec::BoundedVec,
-    session::events::NewSession, staking::events::Chilled, staking::events::Slashed,
+    democracy::events::Started,
+    im_online::events::SomeOffline,
+    runtime_types::{
+        sp_consensus_babe::digests::PreDigest,
+        sp_runtime::bounded::bounded_vec::BoundedVec,
+    },
+    session::events::NewSession,
+    staking::events::Chilled,
+    staking::events::Slashed,
 };
 
 pub type Api =
@@ -85,7 +92,9 @@ pub async fn init_and_subscribe_on_chain_events(
         let block_hash = events.block_hash();
 
         if let Some(signed_block) = api.client.rpc().block(Some(block_hash)).await? {
-            if let Some(authority_index) = decode_authority_index(&signed_block) {
+            if let Some(authority_index) =
+                get_authority_index(&scouty, Some(block_hash)).await?
+            {
                 let block_number = signed_block.block.header.number;
 
                 // Event --> session::NewSession
@@ -1351,4 +1360,39 @@ fn normalize_commission(commission: u32) -> f64 {
 /// Convert Planks to KSM
 fn from_plancks_to_ksm(token_decimals: u8, plancks: u128) -> f64 {
     (plancks as f64 / 10.0_f64.powi(token_decimals.into())) as f64
+}
+
+async fn get_authority_index(
+    scouty: &Scouty,
+    block_hash: Option<H256>,
+) -> Result<Option<AuthorityIndex>, ScoutyError> {
+    let client = scouty.client().clone();
+    let api = client.to_runtime_api::<Api>();
+    if let Some(header) = api.client.rpc().header(block_hash).await? {
+        match header.digest {
+            Digest { logs } => {
+                for digests in logs.iter() {
+                    match digests {
+                        DigestItem::PreRuntime(_, data) => {
+                            if let Some(pre) = PreDigest::decode(&mut &data[..]).ok() {
+                                match pre {
+                                    PreDigest::Primary(e) => {
+                                        return Ok(Some(e.authority_index))
+                                    }
+                                    PreDigest::SecondaryPlain(e) => {
+                                        return Ok(Some(e.authority_index))
+                                    }
+                                    PreDigest::SecondaryVRF(e) => {
+                                        return Ok(Some(e.authority_index))
+                                    }
+                                }
+                            }
+                        }
+                        _ => (),
+                    }
+                }
+            }
+        }
+    }
+    Ok(None)
 }
