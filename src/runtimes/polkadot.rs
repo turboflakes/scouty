@@ -52,7 +52,7 @@ mod node_runtime {}
 
 use node_runtime::{
     democracy::events::Started, im_online::events::SomeOffline,
-    runtime_types::frame_support::storage::bounded_vec::BoundedVec,
+    runtime_types::sp_runtime::bounded::bounded_vec::BoundedVec,
     session::events::NewSession, staking::events::Chilled, staking::events::Slashed,
 };
 
