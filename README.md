@@ -51,7 +51,7 @@ Note: By default every hook is followed by a custom Matrix message. Read [here](
 # create `scouty-cli` directory
 mkdir /opt/scouty-cli
 # download `scouty` binary latest version
-wget -P /scouty-cli https://github.com/turboflakes/scouty/releases/download/v0.3.0/scouty
+wget -P /scouty-cli https://github.com/turboflakes/scouty/releases/download/v0.3.7/scouty
 # make `scouty` binary file executable
 chmod +x /opt/scouty-cli/scouty
 ```
