@@ -55,8 +55,7 @@ use node_runtime::{
     democracy::events::Started,
     im_online::events::SomeOffline,
     runtime_types::{
-        sp_consensus_babe::digests::PreDigest,
-        sp_runtime::bounded::bounded_vec::BoundedVec,
+        sp_consensus_babe::digests::PreDigest, sp_core::bounded::bounded_vec::BoundedVec,
     },
     session::events::NewSession,
     staking::events::Chilled,
@@ -347,7 +346,7 @@ async fn try_run_staking_chilled_hook(
         // Try to run hooks for each stash
         for v in validators.iter_mut() {
             // Identify if the stash has been chilled
-            if event.0 == v.stash {
+            if event.stash == v.stash {
                 v.is_chilled = true;
 
                 // Try HOOK_VALIDATOR_CHILLED
@@ -491,7 +490,7 @@ async fn try_run_staking_slashed_hook(
 
         // Try to run hooks for each stash
         for v in validators.iter_mut() {
-            if event.0 == v.stash {
+            if event.staker == v.stash {
                 v.is_slashed = true;
             }
         }
@@ -501,7 +500,7 @@ async fn try_run_staking_slashed_hook(
         let network = Network::load(&client).await?;
         debug!("network {:?}", network);
 
-        let mut args = vec![event.0.to_string(), event.1.to_string()];
+        let mut args = vec![event.staker.to_string(), event.amount.to_string()];
 
         if config.expose_network || config.expose_all {
             args.push(network.name.to_string());
@@ -522,8 +521,8 @@ async fn try_run_staking_slashed_hook(
 
         // Set slash info
         let slash = Slash {
-            who: Some(event.0),
-            amount_value: event.1,
+            who: Some(event.staker),
+            amount_value: event.amount,
             hook,
         };
 

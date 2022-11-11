@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - WIP update to subxt v0.24.0
 
+## [0.3.9] - 2022-11-11
+
+### Changed
+
+- Update metadata Polkadot runtime/9300
+- Update metadata Westend runtime/9320
+
 ## [0.3.8] - 2022-11-08
 
 ### Changed
