@@ -28,12 +28,13 @@ then
   printf "! ⚠️ Make sure flags '--expose-network --expose-nominators --expose-all-nominators' are set \n"
   exit 1;
 else
-  CHAIN=$1
+  # convert to lowercase
+  CHAIN="$(tr [A-Z] [a-z] <<< "$1")"
 fi
 
 # NOTE: change endpoint and cached file according to the chain
-NOMINATORS_1KV_ENDPOINT="https://${CHAIN,,}.w3f.community/nominators"
-NOMINATORS_1KV_RAW_FILENAME="$(dirname $0)/1kv_${CHAIN,,}_nominators.json"
+NOMINATORS_1KV_ENDPOINT="https://${CHAIN}.w3f.community/nominators"
+NOMINATORS_1KV_RAW_FILENAME="$(dirname $0)/1kv_${CHAIN}_nominators.json"
 
 if [ -z "$2" ]
 then
@@ -67,6 +68,7 @@ curl -sS --fail -X GET -G -H 'Accept: application/json' $NOMINATORS_1KV_ENDPOINT
 if [ $? -ne 0 ]; 
 then
   printf "! ⚠️ 1KV endpoint is down ($NOMINATORS_1KV_ENDPOINT) \n"
+  exit 1;
 fi
 
 IS_1KV_NOMINATOR_BACKING="false"

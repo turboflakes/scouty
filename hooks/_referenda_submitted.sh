@@ -1,11 +1,11 @@
 #!/bin/bash
 #
 # > make a file executable
-# chmod +x ./_democracy_started.sh
+# chmod +x ./_referenda_submitted.sh
 #
 # > positional arguments:
 # 1st - Referendum index
-# 2nd - Vote Threshold
+# 2nd - Track
 #
 # The following arguments depend on exposed flags
 # 3r - Network name (--expose-network flag must be set)
@@ -24,7 +24,7 @@ echo "! e.g. Write your own script here"
 echo "! --------------------------------"
 echo "! Positional arguments:"
 echo "! 1st - Referendum index -> $1" 
-echo "! 2nd - Vote Threshold -> $2"
+echo "! 2nd - Track -> $2"
 echo "! -------------------------------"
 #
 # ***** END *****

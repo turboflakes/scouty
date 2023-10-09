@@ -129,9 +129,9 @@ pub type Validators = Vec<Validator>;
 #[derive(Debug, Deserialize, Default)]
 pub struct Referendum {
     #[serde(default)]
-    pub ref_index: u32,
+    pub index: u32,
     #[serde(default)]
-    pub vote_threshold: String,
+    pub track: u16,
     #[serde(default)]
     pub hook: Hook,
 }
@@ -152,7 +152,7 @@ pub enum Section {
     Slash,
     Chill,
     Offline,
-    Democracy,
+    Referenda,
 }
 
 impl Default for Section {
@@ -235,7 +235,7 @@ impl From<RawData> for Report {
         match data.section {
             Section::Init => section_init(&mut report, data),
             Section::Session => section_session(&mut report, data),
-            Section::Democracy => section_democracy(&mut report, data),
+            Section::Referenda => section_referenda(&mut report, data),
             Section::Slash => section_slash(&mut report, data),
             Section::Chill => section_chill(&mut report, data),
             Section::Offline => section_offline(&mut report, data),
@@ -313,28 +313,28 @@ fn section_session(report: &mut Report, data: RawData) -> &Report {
     sub_section_validators(report, data)
 }
 
-fn section_democracy(report: &mut Report, data: RawData) -> &Report {
+fn section_referenda(report: &mut Report, data: RawData) -> &Report {
     // Network info
     report.add_break();
     report.add_raw_text(format!(
-        "⛓️ <b>{}</b> -> 🗳️ Referendum {} ({}) has begun.",
-        data.network.name, data.referendum.ref_index, data.referendum.vote_threshold,
+        "⛓️ <b>{}</b> -> 🗳️ Referendum {} ({}) has been submitted.",
+        data.network.name, data.referendum.index, data.referendum.track,
     ));
 
     report.add_break();
     report.add_raw_text(format!(
-        "Vote here -> <a href=\"https://polkadot.js.org/apps/?rpc=wss%3A%2F%2F{}.api.onfinality.io%2Fpublic-ws#/democracy\">Polkadot.js</a>",
+        "Vote here -> <a href=\"https://polkadot.js.org/apps/?rpc=wss%3A%2F%2Frpc.ibp.network%2F{}#/referenda\">Polkadot.js</a>",
         data.network.name.to_lowercase()
     ));
     report.add_raw_text(format!(
-        "Or here -> <a href=\"https://{}.polkassembly.io/referendum/{}\">Polkassembly</a>",
+        "Or here -> <a href=\"https://{}.polkassembly.io/referenda/{}\">Polkassembly</a>",
         data.network.name.to_lowercase(),
-        data.referendum.ref_index
+        data.referendum.index
     ));
     report.add_raw_text(format!(
-        "Or here -> <a href=\"https://commonwealth.im/{}/proposal/referendum/{}\">Commonwealth</a>",
+        "Or here -> <a href=\"https://{}.subsquare.io/referenda/{}\">SubSquare</a>",
         data.network.name.to_lowercase(),
-        data.referendum.ref_index
+        data.referendum.index
     ));
 
     // Hook

@@ -36,7 +36,7 @@ pub const HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA: &'static str =
 pub const HOOK_VALIDATOR_SLASHED: &'static str = "Validator has been slashed";
 pub const HOOK_VALIDATOR_CHILLED: &'static str = "Validator has been chilled";
 pub const HOOK_VALIDATOR_OFFLINE: &'static str = "Validator has been offline";
-pub const HOOK_DEMOCRACY_STARTED: &'static str = "Democracy started";
+pub const HOOK_REFERENDA_SUBMITTED: &'static str = "Referenda submitted";
 
 #[derive(Debug, Deserialize, Default)]
 pub struct Hook {

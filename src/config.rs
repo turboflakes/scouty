@@ -82,7 +82,7 @@ pub struct Config {
     #[serde(default)]
     pub hook_validator_offline_path: String,
     #[serde(default)]
-    pub hook_democracy_started_path: String,
+    pub hook_referenda_submitted_path: String,
     // matrix configuration
     #[serde(default)]
     pub matrix_user: String,
@@ -431,12 +431,12 @@ fn get_config() -> Config {
         );
     }
 
-    if let Some(hook_democracy_started_path) =
-        matches.value_of("hook-democracy-started-path")
+    if let Some(hook_referenda_submitted_path) =
+        matches.value_of("hook-referenda-submitted-path")
     {
         env::set_var(
-            "SCOUTY_HOOK_DEMOCRACY_STARTED_PATH",
-            hook_democracy_started_path,
+            "SCOUTY_HOOK_REFERENDA_SUBMITTED_PATH",
+            hook_referenda_submitted_path,
         );
     }
 

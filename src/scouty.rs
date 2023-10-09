@@ -22,7 +22,7 @@
 use crate::config::{Config, CONFIG};
 use crate::errors::ScoutyError;
 use crate::hooks::{
-    Hook, HOOK_DEMOCRACY_STARTED, HOOK_INIT, HOOK_NEW_ERA, HOOK_NEW_SESSION,
+    Hook, HOOK_INIT, HOOK_NEW_ERA, HOOK_NEW_SESSION, HOOK_REFERENDA_SUBMITTED,
     HOOK_VALIDATOR_CHILLED, HOOK_VALIDATOR_OFFLINE, HOOK_VALIDATOR_SLASHED,
     HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA, HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA,
 };
@@ -35,7 +35,7 @@ use crate::runtimes::{
 
 use async_std::task;
 use log::{error, info, warn};
-use std::{convert::TryInto, result::Result, thread, time};
+use std::{convert::TryInto, result::Result, str::FromStr, thread, time};
 use subxt::{
     ext::sp_core::crypto, storage::StorageKey, utils::AccountId32, OnlineClient,
     PolkadotConfig,
@@ -166,7 +166,10 @@ impl Scouty {
         Hook::exists(HOOK_VALIDATOR_SLASHED, &config.hook_validator_slashed_path);
         Hook::exists(HOOK_VALIDATOR_CHILLED, &config.hook_validator_chilled_path);
         Hook::exists(HOOK_VALIDATOR_OFFLINE, &config.hook_validator_offline_path);
-        Hook::exists(HOOK_DEMOCRACY_STARTED, &config.hook_democracy_started_path);
+        Hook::exists(
+            HOOK_REFERENDA_SUBMITTED,
+            &config.hook_referenda_submitted_path,
+        );
 
         match self.runtime {
             SupportedRuntime::Polkadot => {
@@ -214,4 +217,9 @@ pub fn get_account_id_from_storage_key(key: StorageKey) -> AccountId32 {
     let s = &key.0[key.0.len() - 32..];
     let v: [u8; 32] = s.try_into().expect("slice with incorrect length");
     v.into()
+}
+
+pub fn convert_account_id(acc: AccountId32) -> subxt::ext::sp_runtime::AccountId32 {
+    subxt::ext::sp_runtime::AccountId32::from_str(&acc.to_string())
+        .expect("invalid account id")
 }

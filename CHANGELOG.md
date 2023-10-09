@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Add referenda submitted hook
 - update to subxt v0.31.0
 - Update metadata Polkadot runtime/9430
 - Update metadata Kusama runtime/9430

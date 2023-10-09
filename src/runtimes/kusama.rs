@@ -23,7 +23,7 @@ use crate::authority::{AuthorityIndex, AuthorityRecords};
 use crate::config::CONFIG;
 use crate::errors::ScoutyError;
 use crate::hooks::{
-    Hook, HOOK_DEMOCRACY_STARTED, HOOK_INIT, HOOK_NEW_ERA, HOOK_NEW_SESSION,
+    Hook, HOOK_INIT, HOOK_NEW_ERA, HOOK_NEW_SESSION, HOOK_REFERENDA_SUBMITTED,
     HOOK_VALIDATOR_CHILLED, HOOK_VALIDATOR_OFFLINE, HOOK_VALIDATOR_SLASHED,
     HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA, HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA,
 };
@@ -33,7 +33,7 @@ use crate::report::{
     Init, Network, Points, RawData, Referendum, Report, Section, Session, Slash,
     Validator, Validators,
 };
-use crate::scouty::{get_account_id_from_storage_key, Scouty};
+use crate::scouty::{convert_account_id, get_account_id_from_storage_key, Scouty};
 use crate::stats;
 use async_recursion::async_recursion;
 use codec::{Decode, Encode};
@@ -117,13 +117,9 @@ pub async fn init_and_subscribe_on_chain_events(
             let event = events.find_first::<SomeOffline>()?;
             try_run_im_online_some_offline_hook(&scouty, event).await?;
 
-            // // Event --> democracy::Started DEPRECATED
-            // let event = events.find_first::<Started>()?;
-            // try_run_democracy_started_hook(&scouty, event).await?;
-
             // Event --> referenda::Submitted
-            // let event = events.find_first::<Submitted>()?;
-            // try_run_referenda_submitted_hook(&scouty, event).await?;
+            let event = events.find_first::<Submitted>()?;
+            try_run_referenda_submitted_hook(&scouty, event).await?;
 
             // Track authority record
             authority_records.insert_record(block_number, Some(authority_index))?;
@@ -581,62 +577,58 @@ async fn try_run_staking_slashed_hook(
     Ok(())
 }
 
-// async fn try_run_democracy_started_hook(
-//     scouty: &Scouty,
-//     event: Option<Started>,
-// ) -> Result<(), ScoutyError> {
-//     if let Some(event) = event {
-//         let client = scouty.client();
-//         let _api = client.clone().to_runtime_api::<Api>();
-//         let config = CONFIG.clone();
+async fn try_run_referenda_submitted_hook(
+    scouty: &Scouty,
+    event: Option<Submitted>,
+) -> Result<(), ScoutyError> {
+    if let Some(event) = event {
+        let client = scouty.client().clone();
+        let config = CONFIG.clone();
 
-//         let network = Network::load(client).await?;
-//         debug!("network {:?}", network);
+        let network = Network::load(&client).await?;
+        debug!("network {:?}", network);
 
-//         let mut args = vec![
-//             event.ref_index.to_string(),
-//             format!("{:?}", event.threshold),
-//         ];
+        let mut args = vec![event.index.to_string(), event.track.to_string()];
 
-//         if config.expose_network || config.expose_all {
-//             args.push(network.name.to_string());
-//             args.push(network.token_symbol.to_string());
-//             args.push(network.token_decimals.to_string());
-//         } else {
-//             args.push("-".to_string());
-//             args.push("-".to_string());
-//             args.push("-".to_string());
-//         }
+        if config.expose_network || config.expose_all {
+            args.push(network.name.to_string());
+            args.push(network.token_symbol.to_string());
+            args.push(network.token_decimals.to_string());
+        } else {
+            args.push("-".to_string());
+            args.push("-".to_string());
+            args.push("-".to_string());
+        }
 
-//         // Try run hook
-//         let hook = Hook::try_run(
-//             HOOK_DEMOCRACY_STARTED,
-//             &config.hook_democracy_started_path,
-//             args.clone(),
-//         )?;
+        // Try run hook
+        let hook = Hook::try_run(
+            HOOK_REFERENDA_SUBMITTED,
+            &config.hook_referenda_submitted_path,
+            args.clone(),
+        )?;
 
-//         // Set referendum info
-//         let referendum = Referendum {
-//             ref_index: event.ref_index,
-//             vote_threshold: format!("{:?}", event.threshold),
-//             hook,
-//         };
+        // Set referendum info
+        let referendum = Referendum {
+            index: event.index,
+            track: event.track,
+            hook,
+        };
 
-//         // Prepare notification report
-//         let data = RawData {
-//             network,
-//             referendum,
-//             section: Section::Democracy,
-//             ..Default::default()
-//         };
+        // Prepare notification report
+        let data = RawData {
+            network,
+            referendum,
+            section: Section::Referenda,
+            ..Default::default()
+        };
 
-//         let report = Report::from(data);
-//         scouty
-//             .send_message(&report.message(), &report.formatted_message())
-//             .await?;
-//     }
-//     Ok(())
-// }
+        let report = Report::from(data);
+        scouty
+            .send_message(&report.message(), &report.formatted_message())
+            .await?;
+    }
+    Ok(())
+}
 
 async fn try_run_session_hooks(
     scouty: &Scouty,
@@ -647,7 +639,6 @@ async fn try_run_session_hooks(
     para_records: &mut ParaRecords,
 ) -> Result<(), ScoutyError> {
     if let Some(event) = event {
-        let client = scouty.client();
         let api = scouty.client().clone();
         let config = CONFIG.clone();
 
@@ -685,7 +676,7 @@ async fn try_run_session_hooks(
         track_para_records(&scouty, session.current_session_index, para_records).await?;
         // Para records <--
 
-        let network = Network::load(client).await?;
+        let network = Network::load(&api).await?;
         debug!("network {:?}", network);
 
         // Sync all nominators
@@ -944,7 +935,8 @@ async fn get_active_nominators(
     let mut nominators: Vec<String> = vec![];
     let mut nominators_stake: Vec<u128> = vec![];
     for other in exposure.others {
-        nominators.push(other.who.to_string());
+        // NOTE: convert nominator account to specific chain format
+        nominators.push(convert_account_id(other.who).to_string());
         nominators_stake.push(other.value);
     }
 
@@ -960,11 +952,17 @@ async fn get_nominators(
     // BTreeMap<String, Vec<(String, u128, u32)>> = validator_stash : [(nominator_stash, nominator_total_stake, number_of_nominations)]
     let mut stashes_nominators: BTreeMap<String, Vec<(String, u128, u32)>> =
         BTreeMap::new();
-    for stash in config.stashes.iter() {
+    for stash_str in config.stashes.iter() {
+        let stash = AccountId32::from_str(stash_str).map_err(|e| {
+            ScoutyError::Other(format!(
+                "Invalid SS58 format account: {:?} error: {e:?}",
+                stash_str
+            ))
+        })?;
         stashes_nominators.insert(stash.to_string(), vec![]);
     }
 
-    info!("Starting All Nominators - sync");
+    info!("Starting syncing all nominators");
     let storage_query = node_runtime::storage().staking().nominators_root();
     let mut results = api
         .storage()
@@ -974,7 +972,9 @@ async fn get_nominators(
         .await?;
     while let Some((key, nominations)) = results.next().await? {
         let nominator_stash = get_account_id_from_storage_key(key);
-        let bonded_addr = node_runtime::storage().staking().bonded(&nominator_stash);
+        let bonded_addr = node_runtime::storage()
+            .staking()
+            .bonded(&nominator_stash.clone());
         if let Some(controller) =
             api.storage().at_latest().await?.fetch(&bonded_addr).await?
         {
@@ -996,9 +996,10 @@ async fn get_nominators(
                 })?;
                 let BoundedVec(targets) = nominations.targets.clone();
                 if targets.contains(&stash) {
-                    if let Some(x) = stashes_nominators.get_mut(stash_str) {
+                    if let Some(x) = stashes_nominators.get_mut(&stash.to_string()) {
+                        // NOTE: convert account to chain specific format
                         x.push((
-                            nominator_stash.to_string(),
+                            convert_account_id(nominator_stash.clone()).to_string(),
                             total_nominator_stake,
                             targets.len().try_into().unwrap(),
                         ));
@@ -1007,13 +1008,13 @@ async fn get_nominators(
             }
         }
     }
-    info!("Finished All Nominators - sync");
+    info!("Finished syncing all nominators");
     Ok(stashes_nominators)
 }
 
 async fn collect_session_data(
     scouty: &Scouty,
-    session_index: u32,
+    _session_index: u32,
 ) -> Result<Session, ScoutyError> {
     let api = scouty.client().clone();
 
@@ -1048,7 +1049,7 @@ async fn collect_session_data(
         .storage()
         .at_latest()
         .await?
-        .fetch(&current_session_index_addr)
+        .fetch(&start_session_index_addr)
         .await?
         .unwrap();
 
