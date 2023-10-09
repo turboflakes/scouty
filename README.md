@@ -26,12 +26,12 @@ To write **your own bash scripts** and hook them up to any on-chain event suppor
 
 ## Hooks 🪝
 
-`scouty v0.3.0` supports 9 native hooks ready to be explored:
+`scouty v0.4.0` supports 9 native hooks ready to be explored:
 
 - Everytime `scouty` **starts** the following hook is executed ->  [`_init.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_init.sh) (Note: This hook can be used to try out and test new scripts)
 - At every **New Era** the following hook is executed ->  [`_new_era.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_new_era.sh)
 - At every **New Session** the following hook is executed ->  [`_new_session.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_new_session.sh)
-- Everytime a **Referendum Starts** the following hook is executed ->  [`_democracy_started.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_democracy_started.sh)
+- Everytime a **Referendum Submitted** the following hook is executed ->  [`_referenda_submitted.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_referenda_submitted.sh)
 - At the begining of the last session of an era, if a validator is in the **waiting set** and is **queued** to be **active in the next era**, the following hook is executed ->  [`_validator_starts_active_next_era.s`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_starts_active_next_era.sh) (Note: only executed for the stashes predefined)
 - At the begining of the last session of an era, if a validator is in the **active set** and is **NOT queued** to be active in the next era, the following hook is executed ->  [`_validator_starts_inactive_next_era.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_starts_inactive_next_era.sh) (Note: only executed for the stashes predefined)
 - Everytime a validator is **Chilled** the following hook is executed ->  [`_validator_chilled.sh`](https://github.com/turboflakes/scouty/tree/main/hooks/_validator_chilled.sh) (Note: only executed for the stashes predefined)
@@ -51,7 +51,7 @@ Note: By default every hook is followed by a custom Matrix message. Read [here](
 # create `scouty-cli` directory
 mkdir /opt/scouty-cli
 # download `scouty` binary latest version
-wget -P /scouty-cli https://github.com/turboflakes/scouty/releases/download/v0.3.7/scouty
+wget -P /scouty-cli https://github.com/turboflakes/scouty/releases/download/v0.4.0/scouty
 # make `scouty` binary file executable
 chmod +x /opt/scouty-cli/scouty
 ```
@@ -96,7 +96,7 @@ SCOUTY_HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA_PATH=/opt/scouty-cli/hooks/_valid
 SCOUTY_HOOK_VALIDATOR_SLASHED_PATH=/opt/scouty-cli/hooks/_validator_slashed.sh
 SCOUTY_HOOK_VALIDATOR_CHILLED_PATH=/opt/scouty-cli/hooks/_validator_chilled.sh
 SCOUTY_HOOK_VALIDATOR_OFFLINE_PATH=/opt/scouty-cli/hooks/_validator_offline.sh
-SCOUTY_HOOK_DEMOCRACY_STARTED_PATH=/opt/scouty-cli/hooks/_democracy_started.sh
+SCOUTY_HOOK_REFERENDA_SUBMITTED_PATH=./hooks/_referenda_submitted.sh
 #
 # Matrix configuration variables
 SCOUTY_MATRIX_USER=@your-regular-matrix-account:matrix.org
@@ -153,7 +153,7 @@ WARN  scouty::hooks] Hook script - Validator starts inactive next era - filename
 WARN  scouty::hooks] Hook script - Validator has been slashed - filename (/opt/scouty-cli/hooks/_validator_slashed.sh) not defined
 WARN  scouty::hooks] Hook script - Validator has been chilled - filename (/opt/scouty-cli/hooks/_validator_chilled.sh) not defined
 WARN  scouty::hooks] Hook script - Validator has been offline - filename (/opt/scouty-cli/hooks/_validator_offline.sh) not defined
-WARN  scouty::hooks] Hook script - Democracy started - filename (/opt/scouty-cli/hooks/_democracy_started.sh) not defined
+WARN  scouty::hooks] Hook script - Referenda submitted - filename (/opt/scouty-cli/hooks/_referenda_submitted.sh) not defined
 ```
 
 These are just warnings to tell you that those `bash script` files are not available and `scouty` will not be able to run them.
@@ -180,7 +180,7 @@ chmod +x /opt/scouty-cli/hooks/_validator_starts_active_next_era.sh
 chmod +x /opt/scouty-cli/hooks/_validator_starts_inactive_next_era.sh
 chmod +x /opt/scouty-cli/hooks/_validator_slashed.sh
 chmod +x /opt/scouty-cli/hooks/_validator_chilled.sh
-chmod +x /opt/scouty-cli/hooks/_democracy_started.sh
+chmod +x /opt/scouty-cli/hooks/_referenda_submitted.sh
 ```
 
 Finally restart `scouty` *systemd* service
@@ -201,12 +201,6 @@ To enable **Scouty Bot** you will need to create a specific account on Element o
 
 <p align="left">
     <img  style="width: 384px;" src="https://github.com/turboflakes/scouty/blob/main/assets/matrix_new_session_new_era.png?raw=true">
-</p>
-
-#### _democracy_started
-
-<p align="left">
-    <img  style="width: 384px;" src="https://github.com/turboflakes/scouty/blob/main/assets/matrix_democracy_started.png?raw=true">
 </p>
 
 #### _validator_starts_active_next_era
