@@ -29,7 +29,7 @@ use crate::hooks::{
 use crate::matrix::Matrix;
 use crate::runtimes::{
     kusama, polkadot,
-    support::{ChainPrefix, SupportedRuntime},
+    support::{ChainPrefix, ChainTokenSymbol, SupportedRuntime},
     westend,
 };
 
@@ -37,46 +37,57 @@ use async_std::task;
 use log::{error, info, warn};
 use std::{convert::TryInto, result::Result, thread, time};
 use subxt::{
-    sp_core::crypto, sp_core::storage::StorageKey, sp_runtime::AccountId32, Client,
-    ClientBuilder, DefaultConfig,
+    ext::sp_core::crypto, storage::StorageKey, utils::AccountId32, OnlineClient,
+    PolkadotConfig,
 };
 
 pub async fn create_substrate_node_client(
     config: Config,
-) -> Result<Client<DefaultConfig>, subxt::BasicError> {
-    ClientBuilder::new()
-        .set_url(config.substrate_ws_url)
-        .build::<DefaultConfig>()
-        .await
+) -> Result<OnlineClient<PolkadotConfig>, subxt::Error> {
+    OnlineClient::<PolkadotConfig>::from_url(config.substrate_ws_url).await
 }
 
 pub async fn create_or_await_substrate_node_client(
     config: Config,
-) -> Client<DefaultConfig> {
+) -> (OnlineClient<PolkadotConfig>, SupportedRuntime) {
     loop {
         match create_substrate_node_client(config.clone()).await {
             Ok(client) => {
-                let chain = client
-                    .rpc()
-                    .system_chain()
-                    .await
-                    .unwrap_or_else(|_| "Chain undefined".to_string());
-                let name = client
-                    .rpc()
-                    .system_name()
-                    .await
-                    .unwrap_or_else(|_| "Node name undefined".to_string());
-                let version = client
-                    .rpc()
-                    .system_version()
-                    .await
-                    .unwrap_or_else(|_| "Node version undefined".to_string());
+                let chain = client.rpc().system_chain().await.unwrap_or_default();
+                let name = client.rpc().system_name().await.unwrap_or_default();
+                let version = client.rpc().system_version().await.unwrap_or_default();
+                let properties =
+                    client.rpc().system_properties().await.unwrap_or_default();
+
+                // Display SS58 addresses based on the connected chain
+                let chain_prefix: ChainPrefix =
+                    if let Some(ss58_format) = properties.get("ss58Format") {
+                        ss58_format.as_u64().unwrap_or_default().try_into().unwrap()
+                    } else {
+                        0
+                    };
+
+                crypto::set_default_ss58_version(crypto::Ss58AddressFormat::custom(
+                    chain_prefix,
+                ));
+
+                let chain_token_symbol: ChainTokenSymbol =
+                    if let Some(token_symbol) = properties.get("tokenSymbol") {
+                        use serde_json::Value::String;
+                        match token_symbol {
+                            String(token_symbol) => token_symbol.to_string(),
+                            _ => unreachable!("Token symbol with wrong type"),
+                        }
+                    } else {
+                        String::from("")
+                    };
 
                 info!(
                     "Connected to {} network using {} * Substrate node {} v{}",
                     chain, config.substrate_ws_url, name, version
                 );
-                break client;
+
+                break (client, SupportedRuntime::from(chain_token_symbol));
             }
             Err(e) => {
                 error!("{}", e);
@@ -89,37 +100,21 @@ pub async fn create_or_await_substrate_node_client(
 
 pub struct Scouty {
     runtime: SupportedRuntime,
-    client: Client<DefaultConfig>,
+    client: OnlineClient<PolkadotConfig>,
     matrix: Matrix,
 }
 
 impl Scouty {
     async fn new() -> Scouty {
-        let client = create_or_await_substrate_node_client(CONFIG.clone()).await;
-
-        let properties = client.properties();
-
-        // Display SS58 addresses based on the connected chain
-        let chain_prefix: ChainPrefix =
-            if let Some(ss58_format) = properties.get("ss58Format") {
-                ss58_format.as_u64().unwrap_or_default().try_into().unwrap()
-            } else {
-                0
-            };
-        crypto::set_default_ss58_version(crypto::Ss58AddressFormat::custom(chain_prefix));
-
-        // Check for supported runtime
-        let runtime = SupportedRuntime::from(chain_prefix);
+        let (client, runtime) =
+            create_or_await_substrate_node_client(CONFIG.clone()).await;
 
         // Initialize matrix client
         let mut matrix: Matrix = Matrix::new();
-        matrix
-            .authenticate(chain_prefix.into())
-            .await
-            .unwrap_or_else(|e| {
-                error!("{}", e);
-                Default::default()
-            });
+        matrix.authenticate(runtime).await.unwrap_or_else(|e| {
+            error!("{}", e);
+            Default::default()
+        });
 
         Scouty {
             runtime,
@@ -128,7 +123,7 @@ impl Scouty {
         }
     }
 
-    pub fn client(&self) -> &Client<DefaultConfig> {
+    pub fn client(&self) -> &OnlineClient<PolkadotConfig> {
         &self.client
     }
 
@@ -182,7 +177,7 @@ impl Scouty {
             }
             SupportedRuntime::Westend => {
                 westend::init_and_subscribe_on_chain_events(self).await
-            }
+            } // _ => unreachable!(),
         }
     }
 }
@@ -218,5 +213,5 @@ fn spawn_and_restart_subscription_on_error() {
 pub fn get_account_id_from_storage_key(key: StorageKey) -> AccountId32 {
     let s = &key.0[key.0.len() - 32..];
     let v: [u8; 32] = s.try_into().expect("slice with incorrect length");
-    AccountId32::new(v)
+    v.into()
 }

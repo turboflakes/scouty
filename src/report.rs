@@ -24,7 +24,7 @@ use crate::hooks::Hook;
 use log::info;
 use serde::Deserialize;
 use std::{convert::TryInto, result::Result};
-use subxt::{sp_runtime::AccountId32, Client, DefaultConfig};
+use subxt::{utils::AccountId32, OnlineClient, PolkadotConfig};
 
 #[derive(Debug, Default)]
 pub struct Init {
@@ -40,11 +40,13 @@ pub struct Network {
 }
 
 impl Network {
-    pub async fn load(client: &Client<DefaultConfig>) -> Result<Network, ScoutyError> {
-        let properties = client.properties();
+    pub async fn load(
+        api: &OnlineClient<PolkadotConfig>,
+    ) -> Result<Network, ScoutyError> {
+        let properties = api.rpc().system_properties().await?;
 
         // Get Network name
-        let chain_name = client.rpc().system_chain().await?;
+        let chain_name = api.rpc().system_chain().await?;
 
         // Get Token symbol
         let token_symbol: String =
@@ -55,16 +57,11 @@ impl Network {
             };
 
         // Get Token decimals
-        let token_decimals: u8 =
-            if let Some(token_decimals) = properties.get("tokenDecimals") {
-                token_decimals
-                    .as_u64()
-                    .unwrap_or_default()
-                    .try_into()
-                    .unwrap()
-            } else {
-                12
-            };
+        let token_decimals: u8 = if let Some(value) = properties.get("tokenDecimals") {
+            value.as_u64().unwrap_or_default().try_into().unwrap()
+        } else {
+            12
+        };
 
         Ok(Network {
             name: chain_name,

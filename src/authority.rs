@@ -23,7 +23,7 @@ use crate::config::CONFIG;
 use crate::errors::ScoutyError;
 use log::debug;
 use std::{collections::BTreeMap, convert::TryInto, result::Result, str::FromStr};
-use subxt::sp_runtime::AccountId32;
+use subxt::utils::AccountId32;
 
 pub type AuthorityIndex = u32;
 
@@ -69,7 +69,12 @@ impl AuthorityRecords {
                 let i: usize = authority_index.try_into().unwrap();
                 if let Some(author_stash) = self.authorities.get(i) {
                     for stash_str in config.stashes.iter() {
-                        let stash = AccountId32::from_str(stash_str)?;
+                        let stash = AccountId32::from_str(stash_str).map_err(|e| {
+                            ScoutyError::Other(format!(
+                                "Invalid SS58 format account: {:?} error: {e:?}",
+                                stash_str
+                            ))
+                        })?;
                         if author_stash == &stash {
                             let key = format!(
                                 "{}:{}",

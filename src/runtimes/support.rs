@@ -20,6 +20,7 @@
 // SOFTWARE.
 
 pub type ChainPrefix = u16;
+pub type ChainTokenSymbol = String;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SupportedRuntime {
@@ -35,6 +36,17 @@ impl From<ChainPrefix> for SupportedRuntime {
             2 => Self::Kusama,
             42 => Self::Westend,
             _ => unimplemented!("Chain prefix not supported"),
+        }
+    }
+}
+
+impl From<ChainTokenSymbol> for SupportedRuntime {
+    fn from(v: ChainTokenSymbol) -> Self {
+        match v.as_str() {
+            "DOT" => Self::Polkadot,
+            "KSM" => Self::Kusama,
+            "WND" => Self::Westend,
+            _ => unimplemented!("Chain unit not supported"),
         }
     }
 }

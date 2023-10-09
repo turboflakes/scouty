@@ -23,7 +23,7 @@ use crate::config::CONFIG;
 use crate::errors::ScoutyError;
 use log::debug;
 use std::{collections::BTreeMap, convert::TryInto, result::Result, str::FromStr};
-use subxt::sp_runtime::AccountId32;
+use subxt::utils::AccountId32;
 
 #[derive(Debug)]
 pub struct ParaRecords {
@@ -55,7 +55,12 @@ impl ParaRecords {
 
         // Find stash indices
         for stash_str in config.stashes.iter() {
-            let stash = AccountId32::from_str(stash_str)?;
+            let stash = AccountId32::from_str(stash_str).map_err(|e| {
+                ScoutyError::Other(format!(
+                    "Invalid SS58 format account: {:?} error: {e:?}",
+                    stash_str
+                ))
+            })?;
             if let Some(index) = active_validators.iter().position(|x| x == &stash) {
                 config_stashes.push((stash, index.try_into().unwrap()));
             };

@@ -19,38 +19,35 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-mod authority;
-mod config;
-mod errors;
-mod hooks;
-mod identity;
-mod matrix;
-mod para;
-mod report;
-mod runtimes;
-mod scouty;
-mod stats;
+use serde::{Deserialize, Serialize};
 
-use crate::config::CONFIG;
-use crate::scouty::Scouty;
-use log::info;
-use std::env;
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Identity {
+    #[serde(default)]
+    name: String,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    sub: Option<String>,
+}
 
-fn main() {
-    let config = CONFIG.clone();
-    if config.is_debug {
-        env::set_var("RUST_LOG", "scouty=debug,subxt=debug");
-    } else {
-        env::set_var("RUST_LOG", "scouty=info");
+impl Identity {
+    pub fn with_name(name: String) -> Self {
+        Self { name, sub: None }
     }
-    env_logger::try_init().unwrap_or_default();
+    pub fn with_name_and_sub(name: String, sub: String) -> Self {
+        Self {
+            name,
+            sub: Some(sub),
+        }
+    }
+}
 
-    info!(
-        "{} v{} * {}",
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_PKG_VERSION"),
-        env!("CARGO_PKG_DESCRIPTION")
-    );
-
-    Scouty::subscribe();
+impl std::fmt::Display for Identity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(sub) = &self.sub {
+            write!(f, "{}/{}", self.name, sub)
+        } else {
+            write!(f, "{}", self.name)
+        }
+    }
 }
