@@ -226,7 +226,7 @@ async fn try_init_hook(
     for v in validators.iter_mut() {
         // Try HOOK_INIT
         let mut args = vec![
-            v.stash.to_string(),
+            convert_account_id(v.stash.clone()).to_string(),
             v.name.to_string(),
             format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
             v.is_active.to_string(),
@@ -385,7 +385,7 @@ async fn try_run_staking_chilled_hook(
 
                 // Try HOOK_VALIDATOR_CHILLED
                 let mut args = vec![
-                    v.stash.to_string(),
+                    convert_account_id(v.stash.clone()).to_string(),
                     v.name.to_string(),
                     format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
                     v.is_active.to_string(),
@@ -458,7 +458,7 @@ async fn try_run_im_online_some_offline_hook(
 
                     // Try HOOK_VALIDATOR_OFFLINE
                     let mut args = vec![
-                        v.stash.to_string(),
+                        convert_account_id(v.stash.clone()).to_string(),
                         v.name.to_string(),
                         format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
                         v.is_active.to_string(),
@@ -717,7 +717,7 @@ async fn try_run_session_hooks(
         for v in validators.iter_mut() {
             // Try HOOK_NEW_SESSION
             let mut args = vec![
-                v.stash.to_string(),
+                convert_account_id(v.stash.clone()).to_string(),
                 v.name.to_string(),
                 format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
                 v.is_active.to_string(),
@@ -851,7 +851,7 @@ async fn try_run_session_hooks(
                 let next_era_index = session.active_era_index + 1;
                 let next_session_index = session.current_session_index + 1;
                 let mut args = vec![
-                    v.stash.to_string(),
+                    convert_account_id(v.stash.clone()).to_string(),
                     v.name.to_string(),
                     format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
                     format!("{}", next_era_index),
