@@ -431,7 +431,7 @@ impl Matrix {
                     .send()
                     .await?;
 
-                debug!("response {:?}", res);
+                debug!("response {:?} {:?}", res, res.status());
                 match res.status() {
                     reqwest::StatusCode::OK => {
                         let response = res.json::<SendRoomMessageResponse>().await?;
@@ -448,6 +448,11 @@ impl Matrix {
                         return self
                             .dispatch_message(room_id, message, formatted_message)
                             .await;
+                    }
+                    reqwest::StatusCode::FORBIDDEN => {
+                        let response = res.json::<ErrorResponse>().await?;
+                        warn!("Matrix message not sent: {:?}", response.error);
+                        Ok(None)
                     }
                     _ => {
                         let response = res.json::<ErrorResponse>().await?;
