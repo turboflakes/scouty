@@ -242,7 +242,7 @@ async fn try_init_hook(
             args.push("-".to_string());
         }
 
-        if config.expose_nominators || config.expose_all {
+        if v.is_active && (config.expose_nominators || config.expose_all) {
             // get active nominators info
             let (
                 total_active_stake,
@@ -281,7 +281,7 @@ async fn try_init_hook(
             args.push("-".to_string());
         }
 
-        if config.expose_authored_blocks || config.expose_all {
+        if v.is_active && (config.expose_authored_blocks || config.expose_all) {
             let current_session_total = authority_records.current_session_total(&v.stash);
             args.push(current_session_total.to_string());
             args.push("-".to_string());
@@ -314,7 +314,7 @@ async fn try_init_hook(
             args.push("-".to_string());
         }
 
-        if config.expose_para_validator || config.expose_all {
+        if v.is_active && (config.expose_para_validator || config.expose_all) {
             let is_para_validator = para_records.is_para_validator(&v.stash);
             args.push(is_para_validator.to_string());
             args.push("-".to_string());
@@ -323,7 +323,7 @@ async fn try_init_hook(
             args.push("-".to_string());
         }
 
-        if config.expose_era_points || config.expose_all {
+        if v.is_active && (config.expose_era_points || config.expose_all) {
             let points =
                 get_validator_points_info(&v.stash, era_reward_points.clone()).await?;
             args.push(points.validator.to_string());
@@ -680,7 +680,7 @@ async fn try_run_session_hooks(
                 args.push("-".to_string());
             }
 
-            if config.expose_nominators || config.expose_all {
+            if v.is_active && (config.expose_nominators || config.expose_all) {
                 let (total_active_stake, own_stake, nominators, nominators_stake) =
                     get_active_nominators(&scouty, session.active_era_index, &v.stash)
                         .await?;
@@ -713,7 +713,7 @@ async fn try_run_session_hooks(
                 args.push("-".to_string());
             }
 
-            if config.expose_authored_blocks || config.expose_all {
+            if v.is_active && (config.expose_authored_blocks || config.expose_all) {
                 let previous_session_total =
                     authority_records.previous_session_total(&v.stash);
                 let previous_six_sessions_total =
@@ -750,7 +750,7 @@ async fn try_run_session_hooks(
                 args.push("-".to_string());
             }
 
-            if config.expose_para_validator || config.expose_all {
+            if v.is_active && (config.expose_para_validator || config.expose_all) {
                 let is_para_validator = para_records.is_para_validator(&v.stash);
                 let previous_six_sessions_total =
                     para_records.previous_six_sessions_total(&v.stash);
@@ -865,24 +865,27 @@ async fn get_active_nominators(
     let exposure_addr = node_runtime::storage()
         .staking()
         .eras_stakers(&era_index, stash);
-    let exposure = api
+    match api
         .storage()
         .at_latest()
         .await?
         .fetch(&exposure_addr)
         .await?
-        .unwrap();
+    {
+        Some(exposure) => {
+            debug!("__exposure: {:?}", exposure);
+            let mut nominators: Vec<String> = vec![];
+            let mut nominators_stake: Vec<u128> = vec![];
+            for other in exposure.others {
+                // NOTE: convert nominator account to specific chain format
+                nominators.push(convert_account_id(other.who).to_string());
+                nominators_stake.push(other.value);
+            }
 
-    debug!("__exposure: {:?}", exposure);
-    let mut nominators: Vec<String> = vec![];
-    let mut nominators_stake: Vec<u128> = vec![];
-    for other in exposure.others {
-        // NOTE: convert nominator account to specific chain format
-        nominators.push(convert_account_id(other.who).to_string());
-        nominators_stake.push(other.value);
+            Ok((exposure.total, exposure.own, nominators, nominators_stake))
+        }
+        None => Ok((0, 0, vec![], vec![])),
     }
-
-    Ok((exposure.total, exposure.own, nominators, nominators_stake))
 }
 
 async fn get_nominators(
