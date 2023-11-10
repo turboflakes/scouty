@@ -24,7 +24,7 @@ use crate::hooks::Hook;
 use log::info;
 use serde::Deserialize;
 use std::{convert::TryInto, result::Result};
-use subxt::{utils::AccountId32, OnlineClient, PolkadotConfig};
+use subxt::{backend::legacy::LegacyRpcMethods, utils::AccountId32, PolkadotConfig};
 
 #[derive(Debug, Default)]
 pub struct Init {
@@ -41,12 +41,12 @@ pub struct Network {
 
 impl Network {
     pub async fn load(
-        api: &OnlineClient<PolkadotConfig>,
+        rpc: &LegacyRpcMethods<PolkadotConfig>,
     ) -> Result<Network, ScoutyError> {
-        let properties = api.rpc().system_properties().await?;
+        let properties = rpc.system_properties().await?;
 
         // Get Network name
-        let chain_name = api.rpc().system_chain().await?;
+        let chain_name = rpc.system_chain().await?;
 
         // Get Token symbol
         let token_symbol: String =

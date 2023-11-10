@@ -37,7 +37,6 @@ use crate::scouty::{convert_account_id, get_account_id_from_storage_key, Scouty}
 use crate::stats;
 use async_recursion::async_recursion;
 use codec::{Decode, Encode};
-use futures::StreamExt;
 use log::{debug, info};
 use std::{collections::BTreeMap, convert::TryInto, result::Result, str::FromStr};
 use subxt::{
@@ -64,7 +63,7 @@ use node_runtime::{
     staking::events::Slashed,
 };
 
-const ERAS_PER_DAY: u32 = 1;
+const ERAS_PER_DAY: u32 = 4;
 
 pub async fn init_and_subscribe_on_chain_events(
     scouty: &Scouty,
@@ -134,7 +133,6 @@ async fn try_init_hook(
     authority_records: &AuthorityRecords,
     para_records: &ParaRecords,
 ) -> Result<(), ScoutyError> {
-    let client = scouty.client();
     let api = scouty.client().clone();
     let config = CONFIG.clone();
 
@@ -175,7 +173,7 @@ async fn try_init_hook(
 
     let session = collect_session_data(&scouty, current_session_index).await?;
 
-    let network = Network::load(client).await?;
+    let network = Network::load(scouty.rpc()).await?;
     debug!("network {:?}", network);
 
     // Sync all nominators
@@ -368,13 +366,12 @@ async fn try_run_staking_chilled_hook(
     event: Option<Chilled>,
 ) -> Result<(), ScoutyError> {
     if let Some(event) = event {
-        let client = scouty.client();
         let config = CONFIG.clone();
 
         // Collect validators info based on config stashes
         let mut validators = collect_validators_data(&scouty).await?;
 
-        let network = Network::load(client).await?;
+        let network = Network::load(scouty.rpc()).await?;
         debug!("network {:?}", network);
 
         // Try to run hooks for each stash
@@ -441,13 +438,12 @@ async fn try_run_im_online_some_offline_hook(
     event: Option<SomeOffline>,
 ) -> Result<(), ScoutyError> {
     if let Some(event) = event {
-        let client = scouty.client();
         let config = CONFIG.clone();
 
         // Collect validators info based on config stashes
         let mut validators = collect_validators_data(&scouty).await?;
 
-        let network = Network::load(client).await?;
+        let network = Network::load(scouty.rpc()).await?;
         debug!("network {:?}", network);
 
         // Try to run hooks for each stash
@@ -515,8 +511,6 @@ async fn try_run_staking_slashed_hook(
     event: Option<Slashed>,
 ) -> Result<(), ScoutyError> {
     if let Some(event) = event {
-        let client = scouty.client().clone();
-        // let _api = client.to_runtime_api::<Api>();
         let config = CONFIG.clone();
 
         // Collect validators info based on config stashes
@@ -531,7 +525,7 @@ async fn try_run_staking_slashed_hook(
 
         debug!("validators {:?}", validators);
 
-        let network = Network::load(&client).await?;
+        let network = Network::load(scouty.rpc()).await?;
         debug!("network {:?}", network);
 
         let mut args = vec![event.staker.to_string(), event.amount.to_string()];
@@ -582,10 +576,9 @@ async fn try_run_referenda_submitted_hook(
     event: Option<Submitted>,
 ) -> Result<(), ScoutyError> {
     if let Some(event) = event {
-        let client = scouty.client().clone();
         let config = CONFIG.clone();
 
-        let network = Network::load(&client).await?;
+        let network = Network::load(scouty.rpc()).await?;
         debug!("network {:?}", network);
 
         let mut args = vec![event.index.to_string(), event.track.to_string()];
@@ -676,7 +669,7 @@ async fn try_run_session_hooks(
         track_para_records(&scouty, session.current_session_index, para_records).await?;
         // Para records <--
 
-        let network = Network::load(&api).await?;
+        let network = Network::load(scouty.rpc()).await?;
         debug!("network {:?}", network);
 
         // Sync all nominators
@@ -966,14 +959,9 @@ async fn get_nominators(
     }
 
     info!("Starting syncing all nominators");
-    let storage_query = node_runtime::storage().staking().nominators_root();
-    let mut results = api
-        .storage()
-        .at_latest()
-        .await?
-        .iter(storage_query, 10)
-        .await?;
-    while let Some((key, nominations)) = results.next().await? {
+    let storage_query = node_runtime::storage().staking().nominators_iter();
+    let mut results = api.storage().at_latest().await?.iter(storage_query).await?;
+    while let Some(Ok((key, nominations))) = results.next().await {
         let nominator_stash = get_account_id_from_storage_key(key);
         let bonded_addr = node_runtime::storage()
             .staking()
@@ -1482,8 +1470,7 @@ async fn get_authority_index(
     scouty: &Scouty,
     block_hash: Option<H256>,
 ) -> Result<Option<AuthorityIndex>, ScoutyError> {
-    let api = scouty.client().clone();
-    if let Some(header) = api.rpc().header(block_hash).await? {
+    if let Some(header) = scouty.rpc().chain_get_header(block_hash).await? {
         match header.digest {
             Digest { logs } => {
                 for digests in logs.iter() {
