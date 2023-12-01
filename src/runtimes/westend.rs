@@ -23,14 +23,14 @@ use crate::authority::{AuthorityIndex, AuthorityRecords};
 use crate::config::CONFIG;
 use crate::errors::ScoutyError;
 use crate::hooks::{
-    Hook, HOOK_INIT, HOOK_NEW_ERA, HOOK_NEW_SESSION, HOOK_REFERENDA_SUBMITTED,
+    Hook, HOOK_INIT, HOOK_NEW_ERA, HOOK_NEW_SESSION,
     HOOK_VALIDATOR_CHILLED, HOOK_VALIDATOR_OFFLINE, HOOK_VALIDATOR_SLASHED,
     HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA, HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA,
 };
 use crate::identity::Identity;
 use crate::para::ParaRecords;
 use crate::report::{
-    Init, Network, Points, RawData, Referendum, Report, Section, Session, Slash,
+    Init, Network, Points, RawData, Report, Section, Session, Slash,
     Validator, Validators,
 };
 use crate::scouty::{convert_account_id, get_account_id_from_storage_key, Scouty};
