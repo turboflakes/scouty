@@ -56,7 +56,7 @@ use node_runtime::{
     referenda::events::Submitted,
     runtime_types::{
         bounded_collections::bounded_vec::BoundedVec, pallet_identity::types::Data,
-        polkadot_primitives::v5::ValidatorIndex, sp_consensus_babe::digests::PreDigest,
+        polkadot_primitives::v6::ValidatorIndex, sp_consensus_babe::digests::PreDigest,
     },
     session::events::NewSession,
     staking::events::Chilled,

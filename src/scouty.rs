@@ -30,7 +30,7 @@ use crate::matrix::Matrix;
 use crate::runtimes::{
     kusama, polkadot,
     support::{ChainPrefix, ChainTokenSymbol, SupportedRuntime},
-    westend,
+    // westend,
 };
 
 use async_std::task;
@@ -42,7 +42,7 @@ use subxt::{
         rpc::RpcClient,
     },
     ext::sp_core::crypto,
-    utils::AccountId32,
+    utils::{AccountId32, validate_url_is_secure},
     OnlineClient, PolkadotConfig,
 };
 
@@ -55,7 +55,10 @@ pub async fn _create_substrate_node_client(
 pub async fn create_substrate_rpc_client_from_config(
     config: Config,
 ) -> Result<RpcClient, subxt::Error> {
-    RpcClient::from_url(config.substrate_ws_url).await
+    if let Err(_) = validate_url_is_secure(config.substrate_ws_url.as_ref()) {
+        warn!("Insecure URL provided: {}", config.substrate_ws_url);
+    };
+    RpcClient::from_insecure_url(config.substrate_ws_url).await
 }
 
 pub async fn create_substrate_client_from_rpc_client(
@@ -217,9 +220,10 @@ impl Scouty {
             SupportedRuntime::Kusama => {
                 kusama::init_and_subscribe_on_chain_events(self).await
             }
-            SupportedRuntime::Westend => {
-                westend::init_and_subscribe_on_chain_events(self).await
-            } // _ => unreachable!(),
+            // SupportedRuntime::Westend => {
+            //     westend::init_and_subscribe_on_chain_events(self).await
+            // } 
+            _ => unreachable!(),
         }
     }
 }

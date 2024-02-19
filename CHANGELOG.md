@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] - 2024-02-19
+
+### Changed
+- update to subxt v0.34.0
+- Update metadata Polkadot runtime/1001002
+- Update metadata Kusama runtime/1001002
+- Update metadata Westend runtime/1007000 (Disabled)
+
 ## [0.5.1] - 2023-12-01
 
 ### Changed
