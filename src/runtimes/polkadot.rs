@@ -52,7 +52,7 @@ use subxt::{
 mod node_runtime {}
 
 use node_runtime::{
-    im_online::events::SomeOffline,
+    // im_online::events::SomeOffline,
     referenda::events::Submitted,
     runtime_types::{
         bounded_collections::bounded_vec::BoundedVec, pallet_identity::types::Data,
@@ -112,9 +112,9 @@ pub async fn init_and_subscribe_on_chain_events(
             let event = events.find_first::<Chilled>()?;
             try_run_staking_chilled_hook(&scouty, event).await?;
 
-            // Event --> im_online::SomeOffline
-            let event = events.find_first::<SomeOffline>()?;
-            try_run_im_online_some_offline_hook(&scouty, event).await?;
+            // // Event --> im_online::SomeOffline
+            // let event = events.find_first::<SomeOffline>()?;
+            // try_run_im_online_some_offline_hook(&scouty, event).await?;
 
             // Event --> referenda::Submitted
             let event = events.find_first::<Submitted>()?;
@@ -433,78 +433,80 @@ async fn try_run_staking_chilled_hook(
     Ok(())
 }
 
-async fn try_run_im_online_some_offline_hook(
-    scouty: &Scouty,
-    event: Option<SomeOffline>,
-) -> Result<(), ScoutyError> {
-    if let Some(event) = event {
-        let config = CONFIG.clone();
+// DEPRECATED with runtime 1002000
+// 
+// async fn try_run_im_online_some_offline_hook(
+//     scouty: &Scouty,
+//     event: Option<SomeOffline>,
+// ) -> Result<(), ScoutyError> {
+//     if let Some(event) = event {
+//         let config = CONFIG.clone();
 
-        // Collect validators info based on config stashes
-        let mut validators = collect_validators_data(&scouty).await?;
+//         // Collect validators info based on config stashes
+//         let mut validators = collect_validators_data(&scouty).await?;
 
-        let network = Network::load(scouty.rpc()).await?;
-        debug!("network {:?}", network);
+//         let network = Network::load(scouty.rpc()).await?;
+//         debug!("network {:?}", network);
 
-        // Try to run hooks for each stash
-        for v in validators.iter_mut() {
-            for (account_id, _exposure) in event.offline.iter() {
-                if account_id == &v.stash {
-                    v.is_offline = true;
+//         // Try to run hooks for each stash
+//         for v in validators.iter_mut() {
+//             for (account_id, _exposure) in event.offline.iter() {
+//                 if account_id == &v.stash {
+//                     v.is_offline = true;
 
-                    // Try HOOK_VALIDATOR_OFFLINE
-                    let mut args = vec![
-                        convert_account_id(v.stash.clone()).to_string(),
-                        v.name.to_string(),
-                        format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
-                        v.is_active.to_string(),
-                        v.is_queued.to_string(),
-                    ];
+//                     // Try HOOK_VALIDATOR_OFFLINE
+//                     let mut args = vec![
+//                         convert_account_id(v.stash.clone()).to_string(),
+//                         v.name.to_string(),
+//                         format!("0x{:?}", HexDisplay::from(&v.queued_session_keys)),
+//                         v.is_active.to_string(),
+//                         v.is_queued.to_string(),
+//                     ];
 
-                    if config.expose_network || config.expose_all {
-                        args.push(network.name.to_string());
-                        args.push(network.token_symbol.to_string());
-                        args.push(network.token_decimals.to_string());
-                    } else {
-                        args.push("-".to_string());
-                        args.push("-".to_string());
-                        args.push("-".to_string());
-                    }
+//                     if config.expose_network || config.expose_all {
+//                         args.push(network.name.to_string());
+//                         args.push(network.token_symbol.to_string());
+//                         args.push(network.token_decimals.to_string());
+//                     } else {
+//                         args.push("-".to_string());
+//                         args.push("-".to_string());
+//                         args.push("-".to_string());
+//                     }
 
-                    // Try run hook
-                    let hook = Hook::try_run(
-                        HOOK_VALIDATOR_OFFLINE,
-                        &config.hook_validator_offline_path,
-                        args.clone(),
-                    )?;
-                    v.hooks.push(hook);
-                    break;
-                }
-            }
-        }
+//                     // Try run hook
+//                     let hook = Hook::try_run(
+//                         HOOK_VALIDATOR_OFFLINE,
+//                         &config.hook_validator_offline_path,
+//                         args.clone(),
+//                     )?;
+//                     v.hooks.push(hook);
+//                     break;
+//                 }
+//             }
+//         }
 
-        debug!("validators {:?}", validators);
+//         debug!("validators {:?}", validators);
 
-        // NOTE: Only send offline message if the offline account is
-        // one of the stashes defined in config
-        if validators.iter().any(|v| v.is_offline) {
-            // Prepare notification report
-            let data = RawData {
-                network,
-                validators,
-                section: Section::Offline,
-                ..Default::default()
-            };
+//         // NOTE: Only send offline message if the offline account is
+//         // one of the stashes defined in config
+//         if validators.iter().any(|v| v.is_offline) {
+//             // Prepare notification report
+//             let data = RawData {
+//                 network,
+//                 validators,
+//                 section: Section::Offline,
+//                 ..Default::default()
+//             };
 
-            let report = Report::from(data);
-            scouty
-                .send_message(&report.message(), &report.formatted_message())
-                .await?;
-        }
-    }
+//             let report = Report::from(data);
+//             scouty
+//                 .send_message(&report.message(), &report.formatted_message())
+//                 .await?;
+//         }
+//     }
 
-    Ok(())
-}
+//     Ok(())
+// }
 
 async fn try_run_staking_slashed_hook(
     scouty: &Scouty,
@@ -1154,7 +1156,7 @@ async fn get_identity(
         .fetch(&identity_of_addr)
         .await?
     {
-        Some(identity) => {
+        Some((identity, _)) => {
             debug!("identity {:?}", identity);
             let parent = parse_identity_data(identity.info.display);
             let identity = match sub_account_name {
@@ -1272,28 +1274,29 @@ async fn init_authority_records(
 
     authority_records.set_authorities(active_validators);
 
-    // Get blocks authored for each stash
-    for stash_str in config.stashes.iter() {
-        let stash = AccountId32::from_str(stash_str).map_err(|e| {
-            ScoutyError::Other(format!(
-                "Invalid SS58 format account: {:?} error: {e:?}",
-                stash_str
-            ))
-        })?;
-        let key = format!("{}:{}", current_session_index, stash);
-        let blocks_addr = node_runtime::storage()
-            .im_online()
-            .authored_blocks(&current_session_index, &stash);
-        let blocks = if let Some(n) =
-            api.storage().at_latest().await?.fetch(&blocks_addr).await?
-        {
-            n
-        } else {
-            0
-        };
+    // // DEPRECATED: Get blocks authored for each stash
+    // 
+    // for stash_str in config.stashes.iter() {
+    //     let stash = AccountId32::from_str(stash_str).map_err(|e| {
+    //         ScoutyError::Other(format!(
+    //             "Invalid SS58 format account: {:?} error: {e:?}",
+    //             stash_str
+    //         ))
+    //     })?;
+    //     let key = format!("{}:{}", current_session_index, stash);
+    //     let blocks_addr = node_runtime::storage()
+    //         .im_online()
+    //         .authored_blocks(&current_session_index, &stash);
+    //     let blocks = if let Some(n) =
+    //         api.storage().at_latest().await?.fetch(&blocks_addr).await?
+    //     {
+    //         n
+    //     } else {
+    //         0
+    //     };
 
-        authority_records.records.insert(key, blocks);
-    }
+    //     authority_records.records.insert(key, blocks);
+    // }
     Ok(())
 }
 
