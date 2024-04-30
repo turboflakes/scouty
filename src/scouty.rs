@@ -28,7 +28,8 @@ use crate::hooks::{
 };
 use crate::matrix::Matrix;
 use crate::runtimes::{
-    kusama, polkadot,
+    kusama,
+    polkadot,
     support::{ChainPrefix, ChainTokenSymbol, SupportedRuntime},
     // westend,
 };
@@ -42,7 +43,7 @@ use subxt::{
         rpc::RpcClient,
     },
     ext::sp_core::crypto,
-    utils::{AccountId32, validate_url_is_secure},
+    utils::{validate_url_is_secure, AccountId32},
     OnlineClient, PolkadotConfig,
 };
 
@@ -222,7 +223,7 @@ impl Scouty {
             }
             // SupportedRuntime::Westend => {
             //     westend::init_and_subscribe_on_chain_events(self).await
-            // } 
+            // }
             _ => unreachable!(),
         }
     }

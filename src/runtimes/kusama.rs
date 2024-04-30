@@ -24,7 +24,7 @@ use crate::config::CONFIG;
 use crate::errors::ScoutyError;
 use crate::hooks::{
     Hook, HOOK_INIT, HOOK_NEW_ERA, HOOK_NEW_SESSION, HOOK_REFERENDA_SUBMITTED,
-    HOOK_VALIDATOR_CHILLED, HOOK_VALIDATOR_OFFLINE, HOOK_VALIDATOR_SLASHED,
+    HOOK_VALIDATOR_CHILLED, HOOK_VALIDATOR_SLASHED,
     HOOK_VALIDATOR_STARTS_ACTIVE_NEXT_ERA, HOOK_VALIDATOR_STARTS_INACTIVE_NEXT_ERA,
 };
 use crate::identity::Identity;
@@ -235,6 +235,8 @@ async fn try_init_hook(
             block_number.to_string(),
         ];
 
+        info!("__ {:?}", args);
+
         if config.expose_network || config.expose_all {
             args.push(network.name.to_string());
             args.push(network.token_symbol.to_string());
@@ -254,6 +256,11 @@ async fn try_init_hook(
                 active_nominators_stake,
             ) = get_active_nominators(&scouty, session.active_era_index, &v.stash)
                 .await?;
+
+            info!(
+                "__ {:?} {:?} {:?} {:?}",
+                total_active_stake, own_stake, active_nominators, active_nominators_stake
+            );
             // calculate APR
             let apr = calculate_projected_apr(
                 &scouty,
@@ -434,7 +441,7 @@ async fn try_run_staking_chilled_hook(
 }
 
 // DEPRECATED with runtime 1002000
-// 
+//
 // async fn try_run_im_online_some_offline_hook(
 //     scouty: &Scouty,
 //     event: Option<SomeOffline>,
@@ -915,30 +922,46 @@ async fn get_active_nominators(
 ) -> Result<(u128, u128, Vec<String>, Vec<u128>), ScoutyError> {
     let api = scouty.client().clone();
 
-    let exposure_addr = node_runtime::storage()
+    let mut exposure_total = 0;
+    let mut exposure_own = 0;
+    let mut nominators: Vec<String> = vec![];
+    let mut nominators_stake: Vec<u128> = vec![];
+
+    let eras_stakers_paged_addr = node_runtime::storage()
         .staking()
-        .eras_stakers(&era_index, stash);
-    match api
+        .eras_stakers_paged_iter2(&era_index, stash);
+    let mut iter = api
         .storage()
         .at_latest()
         .await?
-        .fetch(&exposure_addr)
+        .iter(eras_stakers_paged_addr)
+        .await?;
+
+    while let Some(Ok((_, exposure))) = iter.next().await {
+        debug!("__exposure: {:?}", exposure);
+        for other in exposure.others {
+            // NOTE: convert nominator account to specific chain format
+            nominators.push(convert_account_id(other.who).to_string());
+            nominators_stake.push(other.value);
+        }
+    }
+
+    let eras_stakers_overview_addr = node_runtime::storage()
+        .staking()
+        .eras_stakers_overview(&era_index, stash);
+    if let Some(exposure) = api
+        .storage()
+        .at_latest()
+        .await?
+        .fetch(&eras_stakers_overview_addr)
         .await?
     {
-        Some(exposure) => {
-            debug!("__exposure: {:?}", exposure);
-            let mut nominators: Vec<String> = vec![];
-            let mut nominators_stake: Vec<u128> = vec![];
-            for other in exposure.others {
-                // NOTE: convert nominator account to specific chain format
-                nominators.push(convert_account_id(other.who).to_string());
-                nominators_stake.push(other.value);
-            }
-
-            Ok((exposure.total, exposure.own, nominators, nominators_stake))
-        }
-        None => Ok((0, 0, vec![], vec![])),
+        debug!("__exposure: {:?}", exposure);
+        exposure_total = exposure.total;
+        exposure_own = exposure.own;
     }
+
+    Ok((exposure_total, exposure_own, nominators, nominators_stake))
 }
 
 async fn get_nominators(
@@ -1237,7 +1260,7 @@ async fn init_authority_records(
     authority_records: &mut AuthorityRecords,
 ) -> Result<(), ScoutyError> {
     let api = scouty.client().clone();
-    let config = CONFIG.clone();
+    let _config = CONFIG.clone();
     // Get current block
     let number_addr = node_runtime::storage().system().number();
     let number = api
@@ -1275,7 +1298,7 @@ async fn init_authority_records(
     authority_records.set_authorities(active_validators);
 
     // // DEPRECATED: Get blocks authored for each stash
-    // 
+    //
     // for stash_str in config.stashes.iter() {
     //     let stash = AccountId32::from_str(stash_str).map_err(|e| {
     //         ScoutyError::Other(format!(
